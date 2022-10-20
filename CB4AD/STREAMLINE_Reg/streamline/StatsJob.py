@@ -315,7 +315,7 @@ def residualReg(algorithms,original_headers,cv_partitions,full_path,data_name,in
         axes_5.get_lines()[i].set_alpha(0.5)
         axes_5.get_lines()[i].set_color(colors[algorithms[i]])
         axes_5.get_lines()[i].set_label(algorithms[i])
-    axes_5.title.set_text("Probability Plot of Training Residual")
+    axes_5.title.set_text("Probability Plot of Testing Residual")
     axes_5.set_xlabel("Theoretical Quantiles")
     axes_5.set_ylabel("Ordered Residual")
     axes_5.legend(loc = 'upper right')
