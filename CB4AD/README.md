@@ -4,6 +4,7 @@
 
 - AMIA2023 dir: 
 > Xinkai Wang, Yanbo Feng, Boning Tong, Jingxuan Bao, Marylyn D. Ritchie, Andrew J. Saykin, Jason H. Moore, Ryan Urbanowicz, Li Shen. **Exploring Automated Machine Learning for Cognitive Outcome Prediction from Multimodal Brain Imaging using STREAMLINE.** _Conference paper in American Medical Informatics Association (AMIA)_. 2023
+> 
 > Boning Tong, Shannon L. Risacher, Jingxuan Bao, Yanbo Feng, Xinkai Wang, Marylyn Ritchie, Jason Moore, Ryan Urbanowicz, Andrew J. Saykin, Li Shen. **Comparing Amyloid Imaging Normalization Strategies for Alzheimer's Disease Classification using an Automated Machine Learning Pipeline.** _Conference paper in American Medical Informatics Association (AMIA)_. 2023
 
 
