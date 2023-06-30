@@ -18,4 +18,4 @@ STREAMLINE as an AutoML pipeline for evaluating AD regression models, and for di
 imaging biomarkers.
 
 ## Method
-![alt text]([http://url/to/img.png](https://github.com/PennShenLab/STREAMLINE-CB4AD/blob/main/CB4AD/AMIA_2023/Reg_STREAMLINE/Pictures/Reg_STREAMLINE.png)https://github.com/PennShenLab/STREAMLINE-CB4AD/blob/main/CB4AD/AMIA_2023/Reg_STREAMLINE/Pictures/Reg_STREAMLINE.png)
+![alt text]([https://github.com/PennShenLab/STREAMLINE-CB4AD/blob/main/CB4AD/AMIA_2023/Reg_STREAMLINE/Pictures/Reg_STREAMLINE.png]
