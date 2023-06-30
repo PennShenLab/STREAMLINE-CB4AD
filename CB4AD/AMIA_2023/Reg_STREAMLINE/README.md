@@ -18,4 +18,4 @@ STREAMLINE as an AutoML pipeline for evaluating AD regression models, and for di
 imaging biomarkers.
 
 ## Method
-<img src="Metric_compare.png" width="800" height="300">
+<img src="CB4AD/AMIA_2023/Reg_STREAMLINE/Pictures/Reg_STREAMLINE.png" width="800" height="300">
