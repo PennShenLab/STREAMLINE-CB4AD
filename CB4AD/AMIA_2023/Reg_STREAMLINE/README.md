@@ -9,9 +9,13 @@ STREAMLINE is a simple, transparent, end-to-end automated machine learning (Auto
 easily conducting rigorous machine learning (ML) modeling and analysis. The initial version is 
 limited to binary classification. To expand its functionality and versatility, in this work, 
 we extend STREAMLINE through implementing multiple regression-based ML models, including linear 
-regression, elastic net, random forest, support vector regressor, group lasso, and L21 norm. 
+regression, elastic net, random forest, support vector regressor, group lasso, L21 norm regularized 
+linear regression, Adaptive Boosting, and Gradient Boosting. 
 We demonstrate the effectiveness of the regression version of STREAMLINE by applying it to 
 the prediction of Alzheimer’s disease (AD) cognitive outcomes using multimodal brain imaging 
 data. Our empirical results demonstrate the feasibility and effectiveness of the newly expanded 
 STREAMLINE as an AutoML pipeline for evaluating AD regression models, and for discovering multimodal 
 imaging biomarkers.
+
+## Method
+
