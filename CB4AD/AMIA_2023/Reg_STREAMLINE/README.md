@@ -40,4 +40,4 @@ This work was supported in part by the National Institutes of Health [U01 AG0668
 Yanbo Feng: [yanbof@seas.upenn.edu](yanbof@seas.upenn.edu)
 
 ## Citation
-
+Wang X, Feng Y, Tong B, Bao J, Ritchie MD, Saykin AJ, Moore JH, Urbanowicz R, Shen L. Exploring Automated Machine Learning for Cognitive Outcome Prediction from Multimodal Brain Imaging using STREAMLINE. AMIA Jt Summits Transl Sci Proc. 2023 Jun 16;2023:544-553. PMID: 37350896; PMCID: PMC10283099.
