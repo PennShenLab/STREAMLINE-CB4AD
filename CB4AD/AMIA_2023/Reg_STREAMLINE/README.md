@@ -26,4 +26,18 @@ This figure demonstrates the workflow of our Regression STREAMLINE pipeline. The
 
 <img src="actual_vs_predict_all_algorithms.png" width="600" height="300">
 
-<img src="residual_distrib_all_algorithms.png" width="600" height="400">
+<img src="probability_train_residual_all_algorithms.png" width="400" height="400"> <img src="probability_test_residual_all_algorithms.png" width="400" height="400">
+
+## Data
+Data used in this work are obtained from the Alzheimer’s Disease Neuroimaging Initiative (ADNI) database ([adni.loni.usc.edu](adni.loni.usc.edu)). ADNI was launched in 2003 as a public-private partnership, led by Principal Investigator Michael W. Weiner, MD. The primary goal of ADNI has been to test whether serial magnetic resonance imaging (MRI), positron emission tomography (PET), other biological markers, and clinical and neuropsychological assessment can be combined to measure the progression of mild cognitive impairment (MCI) and early AD. For up-to-date information, see [www.adni-info.org](www.adni-info.org).
+
+In this work, we extracted and analyzed 805 non-Hispanic Caucasian subjects with complete baseline measurements (the first session of diagnosis, or session M-00) of imaging modalities, genotype data, and visit-matched diagnostic information from the ADNI dataset. This representative sample is composed of 274 controls (i.e. 196 healthy controls (HC) and 78 significant memory concern (SMC) controls) and 531 cases (i.e. 235 early mild cognitive impairment (EMCI) patients, 162 late mild cognitive impairment (LMCI) patients, and 134 AD patients). Among the available types of data provided by the sample, this work focused on the imaging modality data specifically, which include three different imaging modalities: structural MRI (sMRI, measuring brain morphometry), amyloid-PET (AV45-PET, measuring amyloid burden), and FDG-PET (measuring  glucose metabolism). 
+
+## Acknowledgements
+This work was supported in part by the National Institutes of Health [U01 AG066833, U01 AG068057, R01 AG071470]. Data used in this study were obtained from the Alzheimer's Disease Neuroimaging Initiative database, which was funded by NIH U01 AG024904.
+
+## Maintainers
+Yanbo Feng: [yanbof@seas.upenn.edu](yanbof@seas.upenn.edu)
+
+## Citation
+
