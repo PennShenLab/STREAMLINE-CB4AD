@@ -26,7 +26,7 @@ def job(experiment_path,sig_cutoff,jupyterRun):
     # Get dataset paths for all completed dataset analyses in experiment folder
     datasets = os.listdir(experiment_path)
     experiment_name = experiment_path.split('/')[-1] #Name of experiment folder
-    removeList = removeList = ['metadata.pickle','metadata.csv','algInfo.pickle','jobsCompleted','logs','jobs','DatasetComparisons','UsefulNotebooks',experiment_name+'_ML_Pipeline_Report.pdf']
+    removeList = removeList = ['metadata.pickle','metadata.csv','algInfo.pickle','jobsCompleted','logs','jobs','DatasetComparisons','UsefulNotebooks',experiment_name+'_ML_Pipeline_Report.pdf', 'L21']
     for text in removeList:
         if text in datasets:
             datasets.remove(text)

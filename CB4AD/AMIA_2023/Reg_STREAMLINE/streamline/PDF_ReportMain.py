@@ -27,7 +27,7 @@ def main(argv):
     parser = argparse.ArgumentParser(description="")
     #No defaults
 
-    parser.add_argument('--out-path',dest='output_path',type=str,help='path to output directory', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression/Colab_Output')
+    parser.add_argument('--out-path',dest='output_path',type=str,help='path to output directory', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression_AMIA/Colab_Output')
     parser.add_argument('--exp-name', dest='experiment_name',type=str, help='name of experiment output folder (no spaces)', default = 'Demo_Experiment')
 
     #Defaults available (Note default settings will generate pdf summary for Training analysis, but arguments must be specified for summary of models applied to new/replication data)

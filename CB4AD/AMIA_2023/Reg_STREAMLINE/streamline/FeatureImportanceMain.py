@@ -29,7 +29,7 @@ def main(argv):
     #Parse arguments
     parser = argparse.ArgumentParser(description='')
     #No defaults
-    parser.add_argument('--out-path', dest='output_path', type=str, help='path to output directory', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression/Colab_Output')
+    parser.add_argument('--out-path', dest='output_path', type=str, help='path to output directory', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression_AMIA/Colab_Output')
     parser.add_argument('--exp-name', dest='experiment_name', type=str, help='name of experiment (no spaces)', default = 'Demo_Experiment')
     #Defaults available
     parser.add_argument('--do-mi', dest='do_mutual_info', type=str, help='do mutual information analysis',default="True")

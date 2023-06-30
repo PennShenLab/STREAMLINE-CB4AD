@@ -31,7 +31,7 @@ def main(argv):
     #Parse arguments
     parser = argparse.ArgumentParser(description='')
     #No defaults
-    parser.add_argument('--out-path', dest='output_path', type=str, help='path to output directory', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression/Colab_Output')
+    parser.add_argument('--out-path', dest='output_path', type=str, help='path to output directory', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression_AMIA/Colab_Output')
     parser.add_argument('--exp-name', dest='experiment_name', type=str, help='name of experiment (no spaces)', default = 'Demo_Experiment')
     #Defaults available
     parser.add_argument('--max-feat', dest='max_features_to_keep', type=int,help='max features to keep (only applies if filter_poor_features is True)', default=2000)

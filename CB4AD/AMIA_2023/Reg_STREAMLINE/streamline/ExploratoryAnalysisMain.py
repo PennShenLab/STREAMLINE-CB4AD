@@ -39,12 +39,12 @@ def main(argv):
     #Parse arguments ---------------------------------------------------------------------------------------------------------------------------------
     parser = argparse.ArgumentParser(description="")
     #Arguments with no defaults
-    parser.add_argument('--data-path',dest='data_path',type=str,help='path to directory containing datasets', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression/DemoData_2')
-    parser.add_argument('--out-path',dest='output_path',type=str,help='path to output directory', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression/Colab_Output')
+    parser.add_argument('--data-path',dest='data_path',type=str,help='path to directory containing datasets', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression_AMIA/Measurements/ADAS11')
+    parser.add_argument('--out-path',dest='output_path',type=str,help='path to output directory', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression_AMIA/Colab_Output')
     parser.add_argument('--exp-name', dest='experiment_name',type=str, help='name of experiment output folder (no spaces)', default = 'Demo_Experiment')
     #Arguments with defaults available (but critical to check)
-    parser.add_argument('--class-label', dest='class_label', type=str, help='outcome label of all datasets', default="quality")
-    parser.add_argument('--inst-label', dest='instance_label', type=str, help='instance label of all datasets (if present)', default="None")
+    parser.add_argument('--class-label', dest='class_label', type=str, help='outcome label of all datasets', default="Cognition_Score")
+    parser.add_argument('--inst-label', dest='instance_label', type=str, help='instance label of all datasets (if present)', default="Class")
     parser.add_argument('--fi', dest='ignore_features_path',type=str, help='path to .csv file with feature labels to be ignored in analysis (e.g. /home/ryanurb/code/STREAMLINE/droppedFeatures.csv))', default="None")
     parser.add_argument('--cf', dest='categorical_feature_path',type=str, help='path to .csv file with feature labels specified to be treated as categorical where possible', default="None")
     #Arguments with defaults available (but less critical to check)

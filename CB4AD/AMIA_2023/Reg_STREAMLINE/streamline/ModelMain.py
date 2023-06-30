@@ -32,16 +32,19 @@ import ModelJob
 import time
 import csv
 import random
+import shutil
 import pickle
 
 def main(argv):
     #Parse arguments
     parser = argparse.ArgumentParser(description='')
     #No defaults
-    parser.add_argument('--out-path', dest='output_path', type=str, help='path to output directory', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression/Colab_Output')
+    parser.add_argument('--out-path', dest='output_path', type=str, help='path to output directory', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression_AMIA/Colab_Output')
     parser.add_argument('--exp-name', dest='experiment_name', type=str, help='name of experiment (no spaces)', default = 'Demo_Experiment')
     #Sets default run all or none to make algorithm selection from command line simpler
-    parser.add_argument('--do-all', dest='do_all', type=str, help='run all modeling algorithms by default (when set False, individual algorithms are activated individually)',default='True')
+    parser.add_argument('--do-all', dest='do_all', type=str, help='run all modeling algorithms by default (when set False, individual algorithms are activated individually)',default='False')
+    parser.add_argument('--do-CommonReg', dest='do_CommonReg', type=str, help='run common regression algorithms by default (when set False, common regression algorithms are muted)',default='True')
+    parser.add_argument('--do-L21Series', dest='do_L21Series', type=str, help='run L21 regression algorithms (when set False, L21 regression algorithms are muted)',default='True')
     #ML modeling algorithms: Defaults available
     parser.add_argument('--do-linReg', dest='do_linReg', type=str, help='run linear regression modeling',default='True')
     parser.add_argument('--do-ENReg', dest='do_ENReg', type=str, help='run elasticnet regression modeling',default='True')
@@ -50,12 +53,16 @@ def main(argv):
     parser.add_argument('--do-GradReg', dest='do_GradReg', type=str, help='run gradientboosting regressor modeling',default='False')
     parser.add_argument('--do-SVR', dest='do_SVR', type=str, help='run support vector regression modeling',default='True')
     parser.add_argument('--do-GL', dest='do_GL', type=str, help='run group lasso regressor modeling',default='False')
+    #L21-series models
+    parser.add_argument('--do-L21Reg', dest='do_L21Reg', type=str, help='run L21 Norm regression modeling',default='True')
+    parser.add_argument('--do-L21GMMReg', dest='do_L21GMMReg', type=str, help='run GMM L21 Norm regression modeling',default='False')
+    parser.add_argument('--do-L21DGMMReg', dest='do_L21DGMMReg', type=str, help='run DGMM L21 Norm regression modeling',default='False')
     ### Add new algorithms here...
     #Group Lasso Parameters - Defaults available
-    parser.add_argument('--groups-path', dest='groups_path', type=str, help='path to defined groups file', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression/streamline/groups.csv')
+    parser.add_argument('--groups-path', dest='groups_path', type=str, help='path to defined groups file', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression_AMIA/streamline/groups.csv')
     #Other Analysis Parameters - Defaults available
     parser.add_argument('--metric', dest='primary_metric', type=str,help='primary scikit-learn specified scoring metric used for hyperparameter optimization and permutation-based model feature importance evaluation', default='explained_variance')
-    parser.add_argument('--subsample', dest='training_subsample', type=int, help='for long running algos (XGB,SVM,ANN,KN), option to subsample training set (0 for no subsample)', default=0)
+    parser.add_argument('--subsample', dest='training_subsample', type=int, help='for long running algos, option to subsample training set (0 for no subsample)', default=0)
     parser.add_argument('--use-uniformFI', dest='use_uniform_FI', type=str, help='overrides use of any available feature importance estimate methods from models, instead using permutation_importance uniformly',default='True')
     #Hyperparameter sweep options - Defaults available
     parser.add_argument('--n-trials', dest='n_trials', type=str,help='# of bayesian hyperparameter optimization trials using optuna (specify an integer or None)', default=50)
@@ -100,6 +107,9 @@ def main(argv):
     algInfo['Linear Regression'] = [True,'Linear Regression','red']
     algInfo['Elastic Net'] = [True, 'Elastic Net', 'steelblue']
     algInfo['Group Lasso'] = [True, 'Group Lasso', 'orange']
+    algInfo['L21Reg'] = [True,'L21Reg','green']
+    algInfo['L21GMMReg'] = [True, 'L21GMMReg', 'darkslategray']
+    algInfo['L21DGMMReg'] = [True, 'L21DGMMReg', 'magenta']
     algInfo['RF Regressor'] = [True, 'RF Regressor', 'navy']
     algInfo['AdaBoost'] = [True, 'AdaBoost', 'teal']
     algInfo['GradBoost'] = [True, 'GradBoost', 'olive']
@@ -126,13 +136,35 @@ def main(argv):
         algInfo['GradBoost'][0] = eval(options.do_GradReg)
     if not options.do_SVR == 'None':
         algInfo['SVR'][0] = eval(options.do_SVR)
+    if not options.do_L21Reg == 'None':
+        algInfo['L21Reg'][0] = eval(options.do_L21Reg)
+    if not options.do_L21GMMReg == 'None':
+        algInfo['L21GMMReg'][0] = eval(options.do_L21GMMReg)
+    if not options.do_L21DGMMReg == 'None':
+        algInfo['L21DGMMReg'][0] = eval(options.do_L21DGMMReg)
+
     ### Add new algorithms here...
 
     #Pickle the algorithm information dictionary for future use
     pickle_out = open(options.output_path+'/'+options.experiment_name+'/'+"algInfo.pickle", 'wb')
     pickle.dump(algInfo,pickle_out)
     pickle_out.close()
-
+    
+    if options.do_L21Series == 'True':
+        dataset_paths = os.listdir(options.output_path+"/"+options.experiment_name)
+        removeList = ['metadata.pickle','metadata.csv','algInfo.pickle','jobsCompleted','logs','jobs','DatasetComparisons','UsefulNotebooks',options.experiment_name+'_ML_Pipeline_Report.pdf']
+        for text in removeList:
+            if text in dataset_paths:
+                dataset_paths.remove(text)
+        path_1 = options.output_path + "/" + options.experiment_name
+        os.mkdir(path_1+'/L21')
+        for dataset_directory_path_1 in dataset_paths:
+            dest_dir = path_1+'/L21'+'/'+dataset_directory_path_1
+            src_dir = path_1+'/'+dataset_directory_path_1
+            print(dest_dir)
+            print(src_dir)
+            shutil.copytree(src_dir, dest_dir)
+    
     #Make list of algorithms to be run (full names)
     algorithms = []
     for key in algInfo:
@@ -141,12 +173,12 @@ def main(argv):
 
     if not options.do_check and not options.do_resubmit: #Run job submission
         dataset_paths = os.listdir(options.output_path + "/" + options.experiment_name)
-        removeList = ['metadata.pickle','metadata.csv','algInfo.pickle','jobsCompleted','logs','jobs','DatasetComparisons',options.experiment_name+'_ML_Pipeline_Report.pdf']
+        removeList = ['L21', 'metadata.pickle','metadata.csv','algInfo.pickle','jobsCompleted','logs','jobs','DatasetComparisons',options.experiment_name+'_ML_Pipeline_Report.pdf']
         for text in removeList:
             if text in dataset_paths:
                 dataset_paths.remove(text)
-
-        for dataset_directory_path in dataset_paths:
+        if options.do_CommonReg == 'True':
+          for dataset_directory_path in dataset_paths:
             full_path = options.output_path + "/" + options.experiment_name + "/" + dataset_directory_path
             if not os.path.exists(full_path+'/models'):
                 os.mkdir(full_path+'/models')
@@ -158,6 +190,7 @@ def main(argv):
                 train_file_path = full_path+'/CVDatasets/'+dataset_directory_path+"_CV_"+str(cvCount)+"_Train.csv"
                 test_file_path = full_path + '/CVDatasets/' + dataset_directory_path + "_CV_" + str(cvCount) + "_Test.csv"
                 for algorithm in algorithms:
+                  if algorithm != 'L21Reg' and algorithm !='L21GMMReg' and algorithm !='L21DGMMReg':
                     algAbrev = algInfo[algorithm][1]
                     algNoSpace = algorithm.replace(" ", "_")
                     job_counter += 1
@@ -165,7 +198,38 @@ def main(argv):
                         submitClusterJob(algNoSpace,train_file_path,test_file_path,full_path,options.n_trials,options.timeout,options.export_hyper_sweep_plots,instance_label,class_label,random_state,options.output_path+'/'+options.experiment_name,cvCount,filter_poor_features,options.reserved_memory,options.maximum_memory,options.training_subsample,options.queue,options.use_uniform_FI,options.primary_metric,algAbrev,options.groups_path, jupyterRun)
                     else:
                         submitLocalJob(algNoSpace,train_file_path,test_file_path,full_path,options.n_trials,options.timeout,options.export_hyper_sweep_plots,instance_label,class_label,random_state,cvCount,filter_poor_features,options.training_subsample,options.use_uniform_FI,options.primary_metric,algAbrev,options.groups_path,jupyterRun)
+        if options.do_L21Series == 'True':
+          full_path = options.output_path + "/" + options.experiment_name + "/" + 'L21'
+          for cvCount in range(cv_partitions):
+                dataset_paths_2 = dataset_paths.copy()
+                train_file_path_1 = full_path+'/'+dataset_paths[0]+'/CVDatasets/'+dataset_paths_2[0]+"_CV_"+str(cvCount)+"_Train.csv"
+                test_file_path_1 = full_path+'/'+dataset_paths[0]+ '/CVDatasets/' + dataset_paths_2[0] + "_CV_" + str(cvCount) + "_Test.csv"
+                train_file_path_2 = full_path+'/'+dataset_paths[1]+'/CVDatasets/'+dataset_paths_2[1]+"_CV_"+str(cvCount)+"_Train.csv"
+                test_file_path_2 = full_path +'/'+dataset_paths[1]+ '/CVDatasets/' + dataset_paths_2[1] + "_CV_" + str(cvCount) + "_Test.csv"
+                train_file_path_3 = full_path+'/'+dataset_paths[2]+'/CVDatasets/'+dataset_paths_2[2]+"_CV_"+str(cvCount)+"_Train.csv"
+                test_file_path_3 = full_path +'/'+dataset_paths[2]+ '/CVDatasets/' + dataset_paths_2[2] + "_CV_" + str(cvCount) + "_Test.csv"
+                for algorithm in algorithms:
+                    if algorithm == 'L21Reg' or algorithm =='L21GMMReg' or algorithm =='L21DGMMReg':
+                        algAbrev = algInfo[algorithm][1]
+                        algNoSpace = algorithm.replace(" ", "_")
+                        job_counter += 1
+                        if eval(options.run_parallel):
+                            submitClusterJob(algNoSpace,train_file_path,test_file_path,full_path,options.n_trials,options.timeout,options.export_hyper_sweep_plots,instance_label,class_label,random_state,options.output_path+'/'+options.experiment_name,cvCount,filter_poor_features,options.reserved_memory,options.maximum_memory,options.training_subsample,options.queue,options.use_uniform_FI,options.primary_metric,algAbrev,options.groups_path, jupyterRun)
+                        else:
+                            submitLocalJob_2(algNoSpace,train_file_path_1, train_file_path_2, train_file_path_3,test_file_path_1, test_file_path_2, test_file_path_3,full_path,options.n_trials,options.timeout,options.export_hyper_sweep_plots,instance_label,class_label,random_state,cvCount,filter_poor_features,options.training_subsample,options.use_uniform_FI,options.primary_metric,algAbrev, options.output_path, options.experiment_name, jupyterRun)
+#                    print(algorithm)
+#                    algAbrev = algInfo[algorithm][1]
+#                    #Get header names for current CV dataset for use later in GP tree visulaization
+#                    data_name = full_path.split('/')[-1]
+#                    feature_names = pd.read_csv(full_path+'/'+dataset_paths[0]+'/CVDatasets/'+dataset_paths_2[0]+'_CV_'+str(cvCount)+'_Test.csv').columns.values.tolist()
+#                    if instance_label != 'None':
+#                        feature_names.remove(instance_label)
+#                    feature_names.remove(class_label)
+#                    #Get hyperparameter grid
+#                    param_grid = hyperparameters(random_state,feature_names)[algorithm]
+#                    ModelJob.runModel_2(algorithm,train_file_path_1, train_file_path_2, train_file_path_3,test_file_path_1, test_file_path_2, test_file_path_3,full_path,n_trials,timeout,export_hyper_sweep_plots,instance_label,class_label,random_state,cvCount,filter_poor_features,training_subsample,use_uniform_FI,primary_metric,param_grid,algAbrev, output_path, experiment_name)
 
+                    
         #Update metadata
         metadata['Linear Regression'] = str(algInfo['Linear Regression'][0])
         metadata['Elastic Net'] = str(algInfo['Elastic Net'][0])
@@ -174,6 +238,9 @@ def main(argv):
         metadata['AdaBoost'] = str(algInfo['AdaBoost'][0])
         metadata['GradBoost'] = str(algInfo['GradBoost'][0])
         metadata['SVR'] = str(algInfo['SVR'][0])
+        metadata['L21Reg'] = str(algInfo['L21Reg'][0])
+        metadata['L21GMMReg'] = str(algInfo['L21GMMReg'][0])
+        metadata['L21DGMMReg'] = str(algInfo['L21DGMMReg'][0])
         ### Add new algorithms here...
 
         metadata['Primary Metric'] = options.primary_metric
@@ -188,7 +255,7 @@ def main(argv):
 
     elif options.do_check and not options.do_resubmit: #run job completion checks
         datasets = os.listdir(options.output_path + "/" + options.experiment_name)
-        removeList = removeList = ['metadata.pickle','metadata.csv','algInfo.pickle','jobsCompleted','logs','jobs','DatasetComparisons','UsefulNotebooks']
+        removeList = removeList = ['L21', 'metadata.pickle','metadata.csv','algInfo.pickle','jobsCompleted','logs','jobs','DatasetComparisons','UsefulNotebooks']
         for text in removeList:
             if text in datasets:
                 datasets.remove(text)
@@ -212,7 +279,7 @@ def main(argv):
 
     elif options.do_resubmit and not options.do_check: #resubmit any jobs that didn't finish in previous run (mix of job check and job submit)
         datasets = os.listdir(options.output_path + "/" + options.experiment_name)
-        removeList = removeList = ['metadata.pickle','metadata.csv','algInfo.pickle','jobsCompleted','logs','jobs','DatasetComparisons','UsefulNotebooks']
+        removeList = removeList = ['L21', 'metadata.pickle','metadata.csv','algInfo.pickle','jobsCompleted','logs','jobs','DatasetComparisons','UsefulNotebooks']
         for text in removeList:
             if text in datasets:
                 datasets.remove(text)
@@ -222,10 +289,11 @@ def main(argv):
         for filename in glob.glob(options.output_path + "/" + options.experiment_name + '/jobsCompleted/job_model*'):
             ref = filename.split('/')[-1]
             phase5completed.append(ref)
-
-        for dataset in datasets:
+        if options.do_CommonReg == 'True':
+          for dataset in datasets:
             for cv in range(cv_partitions):
                 for algorithm in algorithms:
+                  if algorithm != 'L21Reg' and algorithm !='L21GMMReg' and algorithm !='L21DGMMReg':
                     algAbrev = algInfo[algorithm][1]
                     algNoSpace = algorithm.replace(" ", "_")
                     targetFile = 'job_model_' + dataset + '_' + str(cv) +'_' +algInfo[algorithm][1]+'.txt'
@@ -238,6 +306,27 @@ def main(argv):
                             submitClusterJob(algNoSpace,train_file_path,test_file_path,full_path,options.n_trials,options.timeout,options.export_hyper_sweep_plots,instance_label,class_label,random_state,options.output_path+'/'+options.experiment_name,cv,filter_poor_features,options.reserved_memory,options.maximum_memory,options.training_subsample,options.queue,options.use_uniform_FI,options.primary_metric,algAbrev,options.groups_path,jupyterRun)
                         else:
                             submitLocalJob(algNoSpace,train_file_path,test_file_path,full_path,options.n_trials,options.timeout,options.export_hyper_sweep_plots,instance_label,class_label,random_state,cv,filter_poor_features,options.training_subsample,options.use_uniform_FI,options.primary_metric,algAbrev,options.groups_path,jupyterRun)
+                    
+        if options.do_L21Series == 'True':
+          full_path = options.output_path + "/" + options.experiment_name + "/" + 'L21'
+          for cvCount in range(cv_partitions):
+                dataset_paths_2 = dataset_paths.copy()
+                train_file_path_1 = full_path+'/'+dataset_paths[0]+'/CVDatasets/'+dataset_paths_2[0]+"_CV_"+str(cvCount)+"_Train.csv"
+                test_file_path_1 = full_path+'/'+dataset_paths[0]+ '/CVDatasets/' + dataset_paths_2[0] + "_CV_" + str(cvCount) + "_Test.csv"
+                train_file_path_2 = full_path+'/'+dataset_paths[1]+'/CVDatasets/'+dataset_paths_2[1]+"_CV_"+str(cvCount)+"_Train.csv"
+                test_file_path_2 = full_path +'/'+dataset_paths[1]+ '/CVDatasets/' + dataset_paths_2[1] + "_CV_" + str(cvCount) + "_Test.csv"
+                train_file_path_3 = full_path+'/'+dataset_paths[2]+'/CVDatasets/'+dataset_paths_2[2]+"_CV_"+str(cvCount)+"_Train.csv"
+                test_file_path_3 = full_path +'/'+dataset_paths[2]+ '/CVDatasets/' + dataset_paths_2[2] + "_CV_" + str(cvCount) + "_Test.csv"
+                for algorithm in algorithms:
+                    if algorithm == 'L21Reg' or algorithm =='L21GMMReg' or algorithm =='L21DGMMReg':
+                        algAbrev = algInfo[algorithm][1]
+                        algNoSpace = algorithm.replace(" ", "_")
+                        job_counter += 1
+                        if eval(options.run_parallel):
+                            submitClusterJob(algNoSpace,train_file_path,test_file_path,full_path,options.n_trials,options.timeout,options.export_hyper_sweep_plots,instance_label,class_label,random_state,options.output_path+'/'+options.experiment_name,cvCount,filter_poor_features,options.reserved_memory,options.maximum_memory,options.training_subsample,options.queue,options.use_uniform_FI,options.primary_metric,algAbrev,options.groups_path, jupyterRun)
+                        else:
+                            submitLocalJob_2(algNoSpace,train_file_path_1, train_file_path_2, train_file_path_3,test_file_path_1, test_file_path_2, test_file_path_3,full_path,options.n_trials,options.timeout,options.export_hyper_sweep_plots,instance_label,class_label,random_state,cvCount,filter_poor_features,options.training_subsample,options.use_uniform_FI,options.primary_metric,algAbrev, options.output_path, options.experiment_name, jupyterRun)
+        
     else:
         print("Run options in conflict. Do not request to run check and resubmit at the same time.")
 
@@ -246,8 +335,12 @@ def main(argv):
 
 def submitLocalJob(algNoSpace,train_file_path,test_file_path,full_path,n_trials,timeout,export_hyper_sweep_plots,instance_label,class_label,random_state,cvCount,filter_poor_features,training_subsample,use_uniform_FI,primary_metric,algAbrev,groups_path,jupyterRun):
     """ Runs ModelJob.py locally, once for each combination of cv dataset (for each original target dataset) and ML modeling algorithm. These runs will be completed serially rather than in parallel. """
-    ModelJob.job(algNoSpace,train_file_path,test_file_path,full_path,n_trials,timeout,export_hyper_sweep_plots,instance_label,class_label,random_state,cvCount,filter_poor_features,training_subsample,use_uniform_FI,primary_metric,algAbrev,groups_path,jupyterRun)
-
+    ModelJob.job(algNoSpace,train_file_path,test_file_path,full_path,n_trials,timeout,export_hyper_sweep_plots, instance_label,class_label,random_state,cvCount,filter_poor_features,training_subsample,use_uniform_FI,primary_metric,algAbrev, groups_path, jupyterRun)
+    
+def submitLocalJob_2(algNoSpace,train_file_path_1, train_file_path_2, train_file_path_3,test_file_path_1, test_file_path_2, test_file_path_3,full_path,n_trials,timeout,export_hyper_sweep_plots,instance_label,class_label,random_state,cvCount,filter_poor_features,training_subsample,use_uniform_FI,primary_metric,algAbrev, output_path, experiment_name, jupyterRun):
+    """ Runs ModelJob.py locally, once for each combination of cv dataset (for each original target dataset) and ML modeling algorithm. These runs will be completed serially rather than in parallel. """
+    ModelJob.job_2(algNoSpace,train_file_path_1, train_file_path_2, train_file_path_3,test_file_path_1, test_file_path_2, test_file_path_3,full_path,n_trials,timeout,export_hyper_sweep_plots,instance_label,class_label,random_state,cvCount,filter_poor_features,training_subsample,use_uniform_FI,primary_metric,algAbrev, output_path, experiment_name, jupyterRun)
+    
 def submitClusterJob(algNoSpace,train_file_path,test_file_path,full_path,n_trials,timeout,export_hyper_sweep_plots,instance_label,class_label,random_state,experiment_path,cvCount,filter_poor_features,reserved_memory,maximum_memory,training_subsample,queue,use_uniform_FI,primary_metric,algAbrev,groups_path,jupyterRun):
     """ Runs ModelJob.py once for each combination of cv dataset (for each original target dataset) and ML modeling algorithm. Runs in parallel on a linux-based computing cluster that uses an IBM Spectrum LSF for job scheduling."""
     job_ref = str(time.time())

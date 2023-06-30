@@ -49,6 +49,8 @@ def job(full_path,plot_FI_box,class_label,instance_label,cv_partitions,scale_dat
     algInfo = pickle.load(file)
     file.close()
     #Translate metric name from scikitlearn standard (currently balanced accuracy is hardcoded for use in generating FI plots due to no-skill normalization)
+    #metric_term_dict = {'balanced_accuracy': 'Balanced Accuracy','accuracy': 'Accuracy','f1': 'F1_Score','recall': 'Sensitivity (Recall)','precision': 'Precision (PPV)','roc_auc': 'ROC_AUC'}
+    #primary_metric = metric_term_dict[primary_metric] #currently not used
     metric_term_dict = {'max_error': 'Max Error','mean_absolute_error': 'Mean Absolute Error','mean_squared_error':'Mean Squared Error', 'median_absolute_error':'Median Absolute Error', 'explained_variance':'Explained Variance', 'pearson_correlation':'Pearson Correlation', 'f1': 'F1_Score'}
     metric_weight = metric_term_dict[metric_weight] #currently not used
     
@@ -56,12 +58,22 @@ def job(full_path,plot_FI_box,class_label,instance_label,cv_partitions,scale_dat
     algorithms,abbrev,colors,original_headers = preparation(full_path,algInfo)
     
     #Gather and summarize all evaluation metrics for each algorithm across all CVs. Returns result_table used to plot average ROC and PRC plots and metric_dict organizing all metrics over all algorithms and CVs.
+    #result_table,metric_dict = primaryStats(algorithms,original_headers,cv_partitions,full_path,data_name,instance_label,class_label,abbrev,colors,plot_ROC,plot_PRC,jupyterRun)
     result_table,metric_dict = primaryStatsReg(algorithms,original_headers,cv_partitions,full_path,data_name,instance_label,class_label,abbrev,colors,jupyterRun)
     residualReg(algorithms,original_headers,cv_partitions,full_path,data_name,instance_label,class_label,abbrev,colors,jupyterRun)
+    # result_table_2,metric_dict_2 = primaryStats_2(algorithms_2,original_headers,cv_partitions,full_path,data_name,instance_label,class_label,abbrev_2,colors_2,plot_ROC,plot_PRC,jupyterRun)
+    #Plot ROC and PRC curves comparing average ML algorithm performance (averaged over all CVs)
+    # if eval(jupyterRun):
+    #     print('Generating ROC and PRC plots...')
+    # doPlotROC(result_table,colors,full_path,jupyterRun)
+    # doPlotPRC(result_table,colors,full_path,data_name,instance_label,class_label,jupyterRun)
     #Make list of metric names
     if eval(jupyterRun):
         print('Saving Metric Summaries...')
     metrics = list(metric_dict[algorithms[0]].keys())
+    # metrics_2 = list(metric_dict_2[algorithms_2[0]].keys())
+    #Save metric means and standard deviations
+    # saveCorrelation(full_path,metrics_2,metric_dict_2)
     saveMetricMeans(full_path,metrics,metric_dict)
     saveMetricStd(full_path,metrics,metric_dict)
     #Generate boxplots comparing algorithm performance for each standard metric, if specified by user
@@ -134,9 +146,10 @@ def preparation(full_path,algInfo):
     colors = {}
     for key in algInfo:
         if algInfo[key][0]: # If that algorithm was used
-            algorithms.append(key)
-            abbrev[key] = (algInfo[key][1])
-            colors[key] = (algInfo[key][2])
+        #   if key != 'L21Reg' and key !='L21GMMReg' and key !='L21DGMMReg':
+              algorithms.append(key)
+              abbrev[key] = (algInfo[key][1])
+              colors[key] = (algInfo[key][2])
     print(algorithms)
     original_headers = pd.read_csv(full_path+"/exploratory/OriginalFeatureNames.csv",sep=',').columns.values.tolist() #Get Original Headers
     return algorithms,abbrev,colors,original_headers
@@ -193,10 +206,26 @@ def residualReg(algorithms,original_headers,cv_partitions,full_path,data_name,in
         s_y_trains.append(y_train)
         s_y_tests.append(s_y_test)
         
+        n_bins = 20
         plt.figure()
         plt.rcdefaults()
-        if not os.path.exists(full_path + '/model_evaluation/evalPlots'):
-            os.mkdir(full_path + '/model_evaluation/evalPlots')
+        fig, axes = plt.subplots(1, 2, sharey = True, figsize = [10, 5])
+        axes[0].scatter(s_y_train_pred, s_res_train, alpha = 0.5, c = 'cornflowerblue', label = 'Training')
+        axes[0].scatter(s_y_test_pred, s_res_test, alpha = 0.5, c = 'firebrick', label = 'Testing')
+        axes[0].axhline(y = 0, color = 'black', linestyle = '-')
+        axes[1].hist(s_res_train, bins = n_bins, alpha = 0.5, color = 'cornflowerblue', orientation = 'horizontal')
+        axes[1].hist(s_res_test, bins = n_bins, alpha = 0.5, color = 'firebrick', orientation = 'horizontal')
+        axes[1].axhline(y = 0, color = 'black', linestyle = '-')
+        axes[0].set_ylabel('Residual')
+        axes[0].set_xlabel('Predicted Cognition Score')
+        axes[1].set_xlabel('Number of occurrence')
+        fig.suptitle('Distribution of Residual (' + algorithm+')')
+        fig.legend(loc = 'upper right')
+        plt.show()
+        if not os.path.exists(full_path + '/model_evaluation/residualPlot'):
+            os.mkdir(full_path + '/model_evaluation/residualPlot')
+        fig.savefig(full_path + '/model_evaluation/residualPlot/'+algorithm+'_residual_distrib.png')
+        
         
         m_1, b_1 = np.polyfit(s_y_train_pred, s_y_train, 1)
         m_2, b_2 = np.polyfit(s_y_test_pred, s_y_test, 1)
@@ -204,6 +233,23 @@ def residualReg(algorithms,original_headers,cv_partitions,full_path,data_name,in
         m_tests.append(m_2)
         b_trains.append(b_1)
         b_tests.append(b_2)
+        
+        plt.figure()
+        plt.rcdefaults()
+        fig_1, axes_1 = plt.subplots(1, 2, sharey = True, figsize = [10, 5])
+        axes_1[0].scatter(s_y_train_pred, s_y_train, alpha = 0.5, c = 'cornflowerblue', label = 'Training')
+        axes_1[1].scatter(s_y_test_pred, s_y_test, alpha = 0.5, c = 'firebrick', label = 'Testing')
+        axes_1[0].plot(s_y_train_pred, m_1*s_y_train_pred+b_1)
+        axes_1[1].plot(s_y_test_pred, m_2*s_y_test_pred+b_2)
+        axes_1[0].set_ylabel('Actual Cognition Score')
+        axes_1[0].set_xlabel('Predicted Cognition Score')
+        axes_1[1].set_xlabel('Predicted Cognition Score')
+        fig_1.suptitle('Actual Score vs. Predicted Score (' + algorithm+')')
+        fig_1.legend(loc = 'upper right')
+        plt.show()
+        if not os.path.exists(full_path + '/model_evaluation/actualPredictPolt'):
+            os.mkdir(full_path + '/model_evaluation/actualPredictPolt')
+        fig_1.savefig(full_path + '/model_evaluation/actualPredictPolt/'+algorithm+'_actual_vs_predict.png')
      
     train_df = []
     test_df = []
@@ -223,10 +269,22 @@ def residualReg(algorithms,original_headers,cv_partitions,full_path,data_name,in
     test_df.to_csv(full_path + '/model_evaluation/residual_test.csv')
     test_df = pd.read_csv(full_path + '/model_evaluation/residual_test.csv')
     
+    # train_test_df = []
+    # train_test_df.append(train_df)
+    # train_test_df.append(test_df)
+    # train_test_df = pd.concat(train_test_df)
+    # train_test_df = train_test_df.reset_index(drop=True)
+    # train_test_df.to_csv(full_path + '/model_evaluation/residual_df.csv')
+    # train_test_df = pd.read_csv(full_path + '/model_evaluation/residual_df.csv')
+    
+    plt.figure()
     fig_2, axes_2 = plt.subplots(2, 2, sharey = True, figsize = [20, 15])
+    n_bins = 20
     for i in range(len(algorithms)):
         axes_2[0, 0].scatter(s_y_train_preds[i], s_res_trains[i], alpha = 0.4, c = colors[algorithms[i]], label = algorithms[i])
+        # axes_2[0, 1].hist(s_res_trains[i], bins = n_bins, alpha = 0.7, color = colors[algorithms[i]], orientation = 'horizontal', label = algorithms[i])
         axes_2[1, 0].scatter(s_y_test_preds[i], s_res_tests[i], alpha = 0.4, c = colors[algorithms[i]])
+        # axes_2[1, 1].hist(s_res_tests[i], bins = n_bins, alpha = 0.7, color = colors[algorithms[i]], orientation = 'horizontal')
     
     axes_2[0, 0].axhline(y = 0, color = 'black', linestyle = '-')
     axes_2[0, 1].axhline(y = 0, color = 'black', linestyle = '-')
@@ -234,16 +292,17 @@ def residualReg(algorithms,original_headers,cv_partitions,full_path,data_name,in
     sns.violinplot(x='Algorithm', y='Residual', data=train_df, color = 'b', ax=axes_2[0, 1])
     sns.violinplot(x='Algorithm', y='Residual', data=test_df, color = 'r', ax=axes_2[1, 1])
     axes_2[1, 1].axhline(y = 0, color = 'black', linestyle = '-')
-    axes_2[0, 0].title.set_text("Residual vs Predicted Outcome (Training)")
-    axes_2[1, 0].title.set_text("Residual vs Predicted Outcome (Testing)")
+    axes_2[0, 0].title.set_text("Residual vs Predicted Cognition Score (Training)")
+    axes_2[1, 0].title.set_text("Residual vs Predicted Cognition Score (Testing)")
     axes_2[0, 1].title.set_text("Residual Distribution (Training)")
     axes_2[1, 1].title.set_text("Residual Distribution (Testing)")
     axes_2[0, 0].set_ylabel('Residual')
     axes_2[1, 0].set_ylabel('Residual')
-    axes_2[1, 0].set_xlabel('Predicted Outcome')
+    axes_2[1, 0].set_xlabel('Predicted Cognition Score')
+    # axes_2[1, 1].set_xlabel('Predicted Cognition Score')
     fig_2.legend(loc = 'upper right')
     plt.show()
-    fig_2.savefig(full_path + '/model_evaluation/evalPlots/residual_distrib_all_algorithms.png')
+    fig_2.savefig(full_path + '/model_evaluation/residualPlot/residual_distrib_all_algorithms.png')
     
     fig_3, axes_3 = plt.subplots(1, 2, sharey = True, figsize = [20, 10])
     for i in range(len(algorithms)):
@@ -251,19 +310,20 @@ def residualReg(algorithms,original_headers,cv_partitions,full_path,data_name,in
         axes_3[1].scatter(s_y_test_preds[i], s_y_tests[i], alpha = 0.3, c = colors[algorithms[i]])
         axes_3[0].plot(s_y_train_preds[i], m_trains[i] * s_y_train_preds[i] + b_trains[i], color = colors[algorithms[i]], label = algorithms[i])
         axes_3[1].plot(s_y_test_preds[i], m_tests[i] * s_y_test_preds[i] + b_tests[i], color = colors[algorithms[i]])
-    axes_3[0].title.set_text('Actual Outcome vs. Predicted Outcome (Train)')
-    axes_3[1].title.set_text('Actual Outcome vs. Predicted Outcome (Test)')
-    axes_3[0].set_ylabel('Actual Outcome')
-    axes_3[0].set_xlabel('Predicted Outcome')
-    axes_3[1].set_xlabel('Predicted Outcome')
+    axes_3[0].title.set_text('Actual Score vs. Predicted Score (Train)')
+    axes_3[1].title.set_text('Actual Score vs. Predicted Score (Test)')
+    axes_3[0].set_ylabel('Actual Cognition Score')
+    axes_3[0].set_xlabel('Predicted Cognition Score')
+    axes_3[1].set_xlabel('Predicted Cognition Score')
     fig_3.legend(loc = 'upper right')
     plt.show()
-    fig_3.savefig(full_path + '/model_evaluation/evalPlots/actual_vs_predict_all_algorithms.png')
+    fig_3.savefig(full_path + '/model_evaluation/residualPlot/actual_vs_predict_all_algorithms.png')
     
     fig_4, axes_4 = plt.subplots(1, 1, figsize=(10, 10))
     for i in range(len(algorithms)):
         stats.probplot(s_res_trains[i], dist=stats.norm, sparams=(2,3), plot=plt, fit=False)
     for i in range(len(algorithms)):
+        # axes_4.get_lines()[i].remove()
         axes_4.get_lines()[i].set_markerfacecolor(colors[algorithms[i]])
         axes_4.get_lines()[i].set_alpha(0.5)
         axes_4.get_lines()[i].set_color(colors[algorithms[i]])
@@ -273,12 +333,13 @@ def residualReg(algorithms,original_headers,cv_partitions,full_path,data_name,in
     axes_4.set_ylabel("Ordered Residual")
     axes_4.legend(loc = 'upper right')
     plt.show()
-    fig_4.savefig(full_path + '/model_evaluation/evalPlots/probability_train_residual_all_algorithms.png')
+    fig_4.savefig(full_path + '/model_evaluation/residualPlot/probability_train_residual_all_algorithms.png')
     
     fig_5, axes_5 = plt.subplots(1, 1, figsize=(10, 10))
     for i in range(len(algorithms)):
         stats.probplot(s_res_tests[i], dist=stats.norm, sparams=(2,3), plot=plt, fit=False)
     for i in range(len(algorithms)):
+        # axes_4.get_lines()[i].remove()
         axes_5.get_lines()[i].set_markerfacecolor(colors[algorithms[i]])
         axes_5.get_lines()[i].set_alpha(0.5)
         axes_5.get_lines()[i].set_color(colors[algorithms[i]])
@@ -288,23 +349,32 @@ def residualReg(algorithms,original_headers,cv_partitions,full_path,data_name,in
     axes_5.set_ylabel("Ordered Residual")
     axes_5.legend(loc = 'upper right')
     plt.show()
-    fig_5.savefig(full_path + '/model_evaluation/evalPlots/probability_test_residual_all_algorithms.png')
+    fig_5.savefig(full_path + '/model_evaluation/residualPlot/probability_test_residual_all_algorithms.png')
     
     
 def primaryStatsReg(algorithms,original_headers,cv_partitions,full_path,data_name,instance_label,class_label,abbrev,colors,jupyterRun):
-    """ Combine regression metrics and model feature importance scores across all CV datasets."""
+    """ Combine classification metrics and model feature importance scores as well as ROC and PRC plot data across all CV datasets.
+    Generate ROC and PRC plots comparing separate CV models for each individual modeling algorithm."""
     result_table = []
     metric_dict = {}
     for algorithm in algorithms: #completed for each individual ML modeling algorithm
+        # Define evaluation stats variable lists
+        s_me = [] # balanced accuracies
+        s_mae = [] # standard accuracies
+        s_mse = [] # F1 scores
+        s_mdae = [] # recall values
+        s_mape = [] # specificities
+        s_evs = [] # precision values
+        s_corr = [] # true positives
         # Define feature importance lists
         FI_all = [] # used to save model feature importances individually for each cv within single summary file (all original features in dataset prior to feature selection included)
-        # Define evaluation stats variable lists
-        mes = [] # store max error
-        maes = [] # store mean absolute error
-        mses = [] # store mean squared error
-        mdaes = [] # store median absolute error
-        evss = [] # store explained variance (r2)
-        corrs = [] # store Pearson correlation
+        mes = []
+        maes = []
+        mses = []
+        mdaes = []
+        mapes = []
+        evss = []
+        corrs = []
         #Gather statistics over all CV partitions
         for cvCount in range(0,cv_partitions):
             #Unpickle saved metrics from previous phase
@@ -320,6 +390,7 @@ def primaryStatsReg(algorithms,original_headers,cv_partitions,full_path,data_nam
             evs = results[0][4]
             corr = results[0][5]
             fi = results[1]
+
 
             mes.append(me)
             maes.append(mae)
@@ -365,11 +436,12 @@ def primaryStatsReg(algorithms,original_headers,cv_partitions,full_path,data_nam
 
         result_dict = {'algorithm':algorithm,'max_error':mean_me, 'mean_absolute_error':mean_mae, 'mean_squared_error':mean_mse, 'median_absolute_error':mean_mdae, 'explained_variance':mean_evs, 'pearson_correlation': mean_corr}
         result_table.append(result_dict)
-    #Result table comparing average ML algorithm performance.
+    #Result table later used to create global ROC an PRC plots comparing average ML algorithm performance.
     result_table = pd.DataFrame.from_dict(result_table)
     result_table.set_index('algorithm',inplace=True)
     return result_table,metric_dict
     
+
 def save_FI(FI_all,algorithm,globalFeatureList,full_path):
     """ Creates directory to store model feature importance results and, for each algorithm, exports a file of feature importance scores from each CV. """
     dr = pd.DataFrame(FI_all)
@@ -377,6 +449,59 @@ def save_FI(FI_all,algorithm,globalFeatureList,full_path):
         os.mkdir(full_path+'/model_evaluation/feature_importance/')
     filepath = full_path+'/model_evaluation/feature_importance/'+algorithm+"_FI.csv"
     dr.to_csv(filepath, header=globalFeatureList, index=False)
+
+def doPlotROC(result_table,colors,full_path,jupyterRun):
+    """ Generate ROC plot comparing average ML algorithm performance (over all CV training/testing sets)"""
+    count = 0
+    #Plot curves for each individual ML algorithm
+    for i in result_table.index:
+        #plt.plot(result_table.loc[i]['fpr'],result_table.loc[i]['tpr'], color=colors[i],label="{}, AUC={:.3f}".format(i, result_table.loc[i]['auc']))
+        plt.plot(result_table.loc[i]['fpr'],result_table.loc[i]['tpr'], color=colors[i],label="{}, AUC={:.3f}".format(i, result_table.loc[i]['auc']))
+        count += 1
+    # Set figure dimensions
+    plt.rcParams["figure.figsize"] = (6,6)
+    # Plot no-skill line
+    plt.plot([0, 1], [0, 1], color='black', linestyle='--', label='No-Skill', alpha=.8)
+    #Specify plot axes,labels, and legend
+    plt.xticks(np.arange(0.0, 1.1, step=0.1))
+    plt.xlabel("False Positive Rate", fontsize=15)
+    plt.yticks(np.arange(0.0, 1.1, step=0.1))
+    plt.ylabel("True Positive Rate", fontsize=15)
+    plt.legend(loc="upper left", bbox_to_anchor=(1.01,1))
+    #Export and/or show plot
+    plt.savefig(full_path+'/model_evaluation/Summary_ROC.png', bbox_inches="tight")
+    if eval(jupyterRun):
+        plt.show()
+    else:
+        plt.close('all')
+
+def doPlotPRC(result_table,colors,full_path,data_name,instance_label,class_label,jupyterRun):
+    """ Generate PRC plot comparing average ML algorithm performance (over all CV training/testing sets)"""
+    count = 0
+    #Plot curves for each individual ML algorithm
+    for i in result_table.index:
+        plt.plot(result_table.loc[i]['recall'],result_table.loc[i]['prec'], color=colors[i],label="{}, AUC={:.3f}, APS={:.3f}".format(i, result_table.loc[i]['pr_auc'],result_table.loc[i]['ave_prec']))
+        count += 1
+    #Estimate no skill line based on the fraction of cases found in the first test dataset
+    test = pd.read_csv(full_path+'/CVDatasets/'+data_name+'_CV_0_Test.csv')
+    if instance_label != 'None':
+        test = test.drop(instance_label, axis=1)
+    testY = test[class_label].values
+    noskill = len(testY[testY == 1]) / len(testY)  # Fraction of cases
+    # Plot no-skill line
+    plt.plot([0, 1], [noskill, noskill], color='black', linestyle='--',label='No-Skill', alpha=.8)
+    #Specify plot axes,labels, and legend
+    plt.xticks(np.arange(0.0, 1.1, step=0.1))
+    plt.xlabel("Recall (Sensitivity)", fontsize=15)
+    plt.yticks(np.arange(0.0, 1.1, step=0.1))
+    plt.ylabel("Precision (PPV)", fontsize=15)
+    plt.legend(loc="upper left", bbox_to_anchor=(1.01,1))
+    #Export and/or show plot
+    plt.savefig(full_path+'/model_evaluation/Summary_PRC.png', bbox_inches="tight")
+    if eval(jupyterRun):
+        plt.show()
+    else:
+        plt.close('all')
 
 def saveCorrelation(full_path,metrics,metric_dict):
     with open(full_path+'/model_evaluation/Summary_performance_mean.csv', mode = 'w', newline="") as file:
@@ -600,7 +725,12 @@ def selectForCompositeViz(top_model_features,non_zero_union_features,non_zero_un
             score = fi_ave_norm_list[j][non_zero_union_indexes[i]]
             # multiply score by algorithm performance weight
             weight = ave_metric_list[j]
+            # if weight <= .5: #This is why this method is limited to balanced_accuracy and roc_auc
+            #     weight = 0
+            # if not weight == 0:
+                # weight = (weight - 0.5) / 0.5
             score = score * weight
+            #score = score * ave_metric_list[j]
             if not each in scoreSumDict:
                 scoreSumDict[each] = score
             else:

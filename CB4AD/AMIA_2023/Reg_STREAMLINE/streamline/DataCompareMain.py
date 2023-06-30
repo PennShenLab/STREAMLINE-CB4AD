@@ -30,7 +30,7 @@ import glob
 def main(argv):
     # Parse arguments
     parser = argparse.ArgumentParser(description='')
-    parser.add_argument('--out-path', dest='output_path', type=str, help='path to output directory', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression/Colab_Output')
+    parser.add_argument('--out-path', dest='output_path', type=str, help='path to output directory', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression_AMIA/Colab_Output')
     parser.add_argument('--exp-name', dest='experiment_name', type=str, help='name of experiment (no spaces)', default = 'Demo_Experiment')
     #Lostistical arguments
     parser.add_argument('--run-parallel',dest='run_parallel',type=str,help='if run parallel on LSF compatible computing cluster',default="False")

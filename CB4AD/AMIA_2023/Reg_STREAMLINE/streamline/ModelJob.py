@@ -35,6 +35,9 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import AdaBoostRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 
+
+import l21regjob
+import smogn
 import scipy.stats as scs
 from sklearn import metrics
 from sklearn.metrics import max_error
@@ -74,7 +77,31 @@ def job(algorithm,train_file_path,test_file_path,full_path,n_trials,timeout,expo
     #Get hyperparameter grid
     param_grid = hyperparameters(random_state,feature_names)[algorithm]
     runModel(algorithm,train_file_path,test_file_path,full_path,n_trials,timeout,export_hyper_sweep_plots, instance_label,class_label,random_state,cvCount,filter_poor_features,training_subsample,use_uniform_FI,primary_metric,param_grid,groups_path, algAbrev)
-
+    
+def job_2(algorithm,train_file_path_1, train_file_path_2, train_file_path_3,test_file_path_1, test_file_path_2, test_file_path_3,full_path,n_trials,timeout,export_hyper_sweep_plots,instance_label,class_label,random_state,cvCount,filter_poor_features,training_subsample,use_uniform_FI,primary_metric,algAbrev, output_path, experiment_name, jupyterRun):
+    """ Specifies hardcoded (below) range of hyperparameter options selected for each ML algorithm and then runs the modeling method. Set up this way so that users can easily modify ML hyperparameter settings when running from the Jupyter Notebook. """
+    if n_trials == 'None':
+        n_trials = None
+    else:
+        n_trials = int(n_trials)
+    if timeout == 'None':
+        timeout = None
+    else:
+        timeout = int(timeout)
+    #Add spaces back to algorithm names
+    algorithm = algorithm.replace("_", " ")
+    if eval(jupyterRun):
+        print('Running '+str(algorithm))
+    #Get header names for current CV dataset for use later in GP tree visulaization
+    data_name = test_file_path_1.split('/')[-3]
+    print(data_name)
+    feature_names = pd.read_csv(full_path+'/'+data_name+'/CVDatasets/'+data_name+'_CV_'+str(cvCount)+'_Test.csv').columns.values.tolist()
+    if instance_label != 'None':
+        feature_names.remove(instance_label)
+    feature_names.remove(class_label)
+    #Get hyperparameter grid
+    param_grid = hyperparameters(random_state,feature_names)[algorithm]
+    runModel_2(algorithm,train_file_path_1, train_file_path_2, train_file_path_3,test_file_path_1, test_file_path_2, test_file_path_3,full_path,n_trials,timeout,export_hyper_sweep_plots,instance_label,class_label,random_state,cvCount,filter_poor_features,training_subsample,use_uniform_FI,primary_metric,param_grid,algAbrev, output_path, experiment_name)
 
 def runModel(algorithm,train_file_path,test_file_path,full_path,n_trials,timeout,export_hyper_sweep_plots,instance_label,class_label,random_state,cvCount,filter_poor_features,training_subsample,use_uniform_FI,primary_metric,param_grid,groups_path, algAbrev):
     """ Run all elements of modeling (Except DGMM class): loading data, hyperparameter optimization, model training, and evaluation on hold out testing data.  Each ML algorithm has its own method below to handle these steps. """
@@ -119,6 +146,85 @@ def runModel(algorithm,train_file_path,test_file_path,full_path,n_trials,timeout
     job_file.write('complete')
     job_file.close()
 
+def runModel_2(algorithm,train_file_path_1, train_file_path_2, train_file_path_3,test_file_path_1, test_file_path_2, test_file_path_3,full_path,n_trials,timeout,export_hyper_sweep_plots,instance_label,class_label,random_state,cvCount,filter_poor_features,training_subsample,use_uniform_FI,primary_metric,param_grid,algAbrev, output_path, experiment_name):
+    """ Run all elements of DGMM-class modeling: loading data, hyperparameter optimization, model training, and evaluation on hold out testing data.  Each ML algorithm has its own method below to handle these steps. """
+    job_start_time = time.time() #for tracking phase runtime
+    # Set random seeds for replicatability
+    random.seed(random_state)
+    np.random.seed(random_state)
+    #Load training and testing datasets separating features from outcome for scikit-learn-based modeling
+    trainX,trainY, diag, testX,testY, ROIs, datasets = dataPrep_2(train_file_path_1, train_file_path_2, train_file_path_3, instance_label,class_label, test_file_path_1, test_file_path_2, test_file_path_3)
+    
+    G = nx.Graph()
+    
+    for i in range(len(ROIs)):
+      G.add_node(ROIs[i])
+
+    temporal_lobe = np.array([[37, 38], [39, 40], [41, 42], [55, 56], [79, 80], [81, 82], [83, 84], [85, 86], [87, 88], [89, 90]])
+    temporal_lobe = np.subtract(temporal_lobe, 1)
+
+    posterior_fossa = np.array([[91, 92],[93, 94],[95, 96],[97, 98],[99, 100],[101, 102],[103, 104],[105, 106],[107, 108]])
+    posterior_fossa = np.subtract(posterior_fossa, 1)
+
+    insula_gyri = np.array([[29, 30],[31, 32],[33, 34],[35, 36]])
+    insula_gyri = np.subtract(insula_gyri, 1)
+
+    frontal_lobe = np.array([[1, 2],[3, 4],[5, 6],[7, 8],[9, 10],[11, 12],[13, 14],[15, 16],[17, 18],[19, 20],[21, 22],[23, 24],[25, 26],[27, 28],[69, 70]])
+    frontal_lobe = np.subtract(frontal_lobe, 1)
+
+    occipital_lobe = np.array([[43, 44],[45, 46],[47, 48],[49, 50],[51, 52],[53, 54]])
+    occipital_lobe = np.subtract(occipital_lobe, 1)
+
+    parietal_lobe = np.array([[57, 58],[59, 60],[61, 62],[63, 64],[65, 66],[67, 68]])
+    parietal_lobe = np.subtract(parietal_lobe, 1)
+
+    central_structures = np.array([[53, 54], [55, 56], [57, 58], [59, 60]])
+    central_structures = np.subtract(central_structures, 1)
+
+    whole_connections = np.concatenate((temporal_lobe, posterior_fossa, insula_gyri, frontal_lobe, occipital_lobe, parietal_lobe, central_structures))
+
+    for connection in whole_connections:
+      G.add_edge(ROIs[connection[0]], ROIs[connection[1]])
+    
+    #Run ml modeling algorithm specified-------------------------------------------------------------------------------------------------------------------------------------------------------------
+    if algorithm == 'L21Reg':
+        ret_1, ret_2,ret_3, resd_1,  resd_2, resd_3 = run_L21_full(trainX, trainY,testX, testY, random_state, cvCount,param_grid, n_trials,timeout,export_hyper_sweep_plots,full_path,use_uniform_FI,primary_metric, ROIs, datasets)
+    elif algorithm == 'L21GMMReg':
+        ret_1, ret_2,ret_3, resd_1,  resd_2, resd_3 = run_L21GMM_full(trainX, trainY,testX, testY, G, random_state, cvCount,param_grid, n_trials,timeout,export_hyper_sweep_plots,full_path,use_uniform_FI,primary_metric, ROIs, datasets)
+    elif algorithm == 'L21DGMMReg':
+        ret_1, ret_2,ret_3, resd_1,  resd_2, resd_3 = run_L21DGMM_full(trainX, trainY,testX, testY, diag, random_state, cvCount,param_grid, n_trials,timeout,export_hyper_sweep_plots,full_path,use_uniform_FI,primary_metric, ROIs, datasets)
+    
+    #Pickle all evaluation metrics for ML model training and evaluation
+    if not os.path.exists(full_path+'/model_evaluation'):
+        os.mkdir(full_path+'/model_evaluation')
+    if not os.path.exists(full_path+'/model_evaluation/pickled_metrics'):
+        os.mkdir(full_path+'/model_evaluation/pickled_metrics')
+        
+    for i in range(len(datasets)):
+        if not os.path.exists(output_path+'/'+experiment_name+'/'+datasets[i]+'/model_evaluation'):
+            os.mkdir(output_path+'/'+experiment_name+'/'+datasets[i]+'/model_evaluation')
+        if not os.path.exists(output_path+'/'+experiment_name+'/'+datasets[i]+'/model_evaluation/pickled_metrics'):
+            os.mkdir(output_path+'/'+experiment_name+'/'+datasets[i]+'/model_evaluation/pickled_metrics')
+
+    pickle.dump(ret_1, open(output_path+'/'+experiment_name+'/'+datasets[0] + '/model_evaluation/pickled_metrics/' + algAbrev + '_CV_' + str(cvCount) + "_metrics.pickle", 'wb'))
+    pickle.dump(ret_2, open(output_path+'/'+experiment_name+'/'+datasets[1] + '/model_evaluation/pickled_metrics/' + algAbrev + '_CV_' + str(cvCount) + "_metrics.pickle", 'wb'))
+    pickle.dump(ret_3, open(output_path+'/'+experiment_name+'/'+datasets[2] + '/model_evaluation/pickled_metrics/' + algAbrev + '_CV_' + str(cvCount) + "_metrics.pickle", 'wb'))
+    pickle.dump(resd_1, open(output_path+'/'+experiment_name+'/'+datasets[0] + '/model_evaluation/pickled_metrics/' + algAbrev + '_CV_' + str(cvCount) + "_residuals.pickle", 'wb'))
+    pickle.dump(resd_2, open(output_path+'/'+experiment_name+'/'+datasets[1] + '/model_evaluation/pickled_metrics/' + algAbrev + '_CV_' + str(cvCount) + "_residuals.pickle", 'wb'))
+    pickle.dump(resd_3, open(output_path+'/'+experiment_name+'/'+datasets[2] + '/model_evaluation/pickled_metrics/' + algAbrev + '_CV_' + str(cvCount) + "_residuals.pickle", 'wb'))
+    #Save runtime of ml algorithm training and evaluation
+    if not os.path.exists(full_path+'/runtime'):
+        os.mkdir(full_path+'/runtime')
+    saveRuntime(output_path+'/'+experiment_name+'/'+datasets[0],job_start_time,algAbrev,algorithm,cvCount)
+    saveRuntime(output_path+'/'+experiment_name+'/'+datasets[1],job_start_time,algAbrev,algorithm,cvCount)
+    saveRuntime(output_path+'/'+experiment_name+'/'+datasets[2],job_start_time,algAbrev,algorithm,cvCount)
+    # Print phase completion
+    print(full_path.split('/')[-1] + " [CV_" + str(cvCount) + "] ("+algAbrev+") training complete. ------------------------------------")
+    experiment_path = '/'.join(full_path.split('/')[:-1])
+    job_file = open(experiment_path + '/jobsCompleted/job_model_' + full_path.split('/')[-1] + '_' + str(cvCount) +'_' +algAbrev+'.txt', 'w')
+    job_file.write('complete')
+    job_file.close()
+
 def dataPrep(train_file_path,instance_label,class_label,test_file_path):
     """ Loads target cv training dataset, separates class from features and removes instance labels."""
     train = pd.read_csv(train_file_path)
@@ -134,6 +240,51 @@ def dataPrep(train_file_path,instance_label,class_label,test_file_path):
     testY = test[class_label].values
     del test #memory cleanup
     return trainX,trainY,testX,testY
+
+def dataPrep_2(train_file_path_1, train_file_path_2, train_file_path_3, instance_label,class_label, test_file_path_1, test_file_path_2, test_file_path_3):
+    train_1, train_2, train_3 = pd.read_csv(train_file_path_1), pd.read_csv(train_file_path_2), pd.read_csv(train_file_path_3)
+    ROIs = []
+    for ROI in train_1.columns:
+        ROIs.append(ROI)
+    ROIs.remove(instance_label)
+    ROIs.remove(class_label)
+    dataset_1 = train_file_path_1.split('/')[8]
+    dataset_2 = train_file_path_2.split('/')[8]
+    dataset_3 = train_file_path_3.split('/')[8]
+    datasets = [dataset_1, dataset_2, dataset_3]
+    print(train_file_path_1)
+    print(datasets)
+    if class_label != 'None':
+        trainY_1 = train_1[class_label].values
+        trainY_2 = train_2[class_label].values
+        trainY_3 = train_3[class_label].values
+        
+        train_1 = train_1.drop(class_label,axis=1)
+        train_2 = train_2.drop(class_label,axis=1)
+        train_3 = train_3.drop(class_label,axis=1)
+    diag = train_1[instance_label].values
+    trainX_1 = train_1.drop(instance_label,axis=1).values
+    trainX_2 = train_2.drop(instance_label,axis=1).values
+    trainX_3 = train_3.drop(instance_label,axis=1).values
+    trainX = np.array([trainX_1, trainX_2, trainX_3])
+    trainY = np.mean(np.array([trainY_1, trainY_2, trainY_3]), axis = 0)
+    del train_1, train_2, train_3
+    test_1, test_2, test_3 = pd.read_csv(test_file_path_1), pd.read_csv(test_file_path_2), pd.read_csv(test_file_path_3)
+    if instance_label != 'None':
+        testY_1 = test_1[class_label].values
+        testY_2 = test_2[class_label].values
+        testY_3 = test_3[class_label].values
+        
+        test_1 = test_1.drop(class_label,axis=1)
+        test_2 = test_2.drop(class_label,axis=1)
+        test_3 = test_3.drop(class_label,axis=1)
+    testX_1 = test_1.drop(instance_label,axis=1).values
+    testX_2 = test_2.drop(instance_label,axis=1).values
+    testX_3 = test_3.drop(instance_label,axis=1).values
+    testX = np.array([testX_1, testX_2, testX_3])
+    testY = np.mean(np.array([testY_1, testY_2, testY_3]), axis = 0)
+    del test_1, test_2, test_3
+    return trainX, trainY, diag, testX, testY, ROIs, datasets
     
 def saveRuntime(full_path,job_start_time,algAbrev,algorithm,cvCount):
     """ Save ML algorithm training and evaluation runtime for this phase."""
@@ -141,20 +292,209 @@ def saveRuntime(full_path,job_start_time,algAbrev,algorithm,cvCount):
     runtime_file.write(str(time.time() - job_start_time))
     runtime_file.close()
 
+def hyper_eval(est, x_train, y_train, random_state, hype_cv, params, scoring_metric):
+    """ Run hyperparameter evaluation for a given ML algorithm using Optuna. Uses further k-fold cv within target training data for hyperparameter evaluation."""
+    cv = StratifiedKFold(n_splits=hype_cv, shuffle=True, random_state=random_state)
+    model = clone(est).set_params(**params)
+    #Flexibly handle whether random seed is given as 'random_seed' or 'seed' - scikit learn uses 'random_seed'
+    #for a in ['random_state','seed']:
+    #    if hasattr(model,a):
+    #        setattr(model,a,random_state)
+    performance = np.mean(cross_val_score(model,x_train,y_train,cv=cv,scoring=scoring_metric,verbose=0))
+    return performance
+
 def hyper_eval_Regression(est, x_train, y_train, random_state, hype_cv, params, scoring_metric):
     """ Run hyperparameter evaluation for a given ML algorithm using Optuna. Uses further k-fold cv within target training data for hyperparameter evaluation."""
     cv = KFold(n_splits=hype_cv, shuffle=True, random_state=random_state)
     model = clone(est).set_params(**params)
     #Flexibly handle whether random seed is given as 'random_seed' or 'seed' - scikit learn uses 'random_seed'
-    performance = np.mean(cross_val_score(model,x_train,y_train,cv=cv,scoring=scoring_metric,verbose=0, error_score = 'raise'))
+    performance = np.mean(cross_val_score(model,x_train,y_train,cv=cv,scoring=scoring_metric,verbose=0, error_score='raise'))
     return performance
 
+def hyper_eval_2(est, x_train, y_train, random_state, hype_cv, params, scoring_metric, G = None, diag = np.full(1, np.nan)):
+    """ Run hyperparameter evaluation for a given ML algorithm using Optuna. Uses further k-fold cv within target training data for hyperparameter evaluation."""
+    cv = KFold(n_splits=hype_cv, shuffle=True, random_state=random_state)
+    model = clone(est).set_params(**params)
+    #Flexibly handle whether random seed is given as 'random_seed' or 'seed' - scikit learn uses 'random_seed'
+    performance = np.mean(cross_val_score_2(model,x_train[0], x_train[1], x_train[2] ,y_train, G = G, diag = diag, cv=cv,scoring=scoring_metric))
+    return performance
+
+def cross_val_score_2(est,X_1, X_2, X_3,y, G, diag, cv, scoring):
+    scores = []
+    if scoring == 'explained_variance':
+        for train_index, test_index in cv.split(X_1, y):
+            X_train_1, X_test_1 = X_1[train_index],X_1[test_index]
+            X_train_2, X_test_2 = X_2[train_index],X_2[test_index]
+            X_train_3, X_test_3 = X_3[train_index],X_3[test_index]
+            y_train, y_test = y[train_index],y[test_index]
+            X_train = np.array([X_train_1, X_train_2, X_train_3])
+            X_test = np.array([X_test_1, X_test_2, X_test_3])
+            if (G == None) and all(np.isnan(diag)):
+                est.fit(X_train, y_train)
+            elif (G != None) and all(np.isnan(diag)):
+                est.fitG(X_train, y_train, G)
+            elif (G == None) and (all(np.isnan(diag)) == False):
+                diag_train = diag[train_index]
+                est.fitD(X_train, y_train, diag_train)
+            else:
+                raise ValueError("The indicated fitting strategy does not exist. Please attemp from L21, L21GMM, and L21DGMM.")
+            y_pred = est.predict(X_test)
+            evs_1 = explained_variance_score(np.squeeze(y_test),y_pred[0])
+            evs_2 = explained_variance_score(np.squeeze(y_test),y_pred[1])
+            evs_3 = explained_variance_score(np.squeeze(y_test),y_pred[2])
+            score = np.mean(np.array([evs_1, evs_2, evs_3]))
+            scores.append(score)
+    elif scoring == 'max_error':
+        for train_index, test_index in cv.split(X_1, y):
+            X_train_1, X_test_1 = X_1[train_index],X_1[test_index]
+            X_train_2, X_test_2 = X_2[train_index],X_2[test_index]
+            X_train_3, X_test_3 = X_3[train_index],X_3[test_index]
+            y_train, y_test = y[train_index],y[test_index]
+            X_train = np.array([X_train_1, X_train_2, X_train_3])
+            X_test = np.array([X_test_1, X_test_2, X_test_3])
+            if (G == None) and (diag == None).all():
+                est.fit(X_train, y_train)
+            elif (G != None) and (diag == None).all():
+                est.fitG(X_train, y_train, G)
+            elif (G == None) and (diag != None).all():
+                diag_train = diag[train_index]
+                est.fitD(X_train, y_train, diag_train)
+            else:
+                raise ValueError("The indicated fitting strategy does not exist. Please attemp from L21, L21GMM, and L21DGMM.")
+            y_pred = est.predict(X_test)
+            me_1 = max_error(np.squeeze(y_test), y_pred[0])
+            me_2 = max_error(np.squeeze(y_test), y_pred[1])
+            me_3 = max_error(np.squeeze(y_test), y_pred[2])
+            score = np.max(np.array([me_1, me_2, me_3]))
+            scores.append(score)
+    elif scoring == 'neg_mean_absolute_error':
+        for train_index, test_index in cv.split(X_1, y):
+            X_train_1, X_test_1 = X_1[train_index],X_1[test_index]
+            X_train_2, X_test_2 = X_2[train_index],X_2[test_index]
+            X_train_3, X_test_3 = X_3[train_index],X_3[test_index]
+            y_train, y_test = y[train_index],y[test_index]
+            X_train = np.array([X_train_1, X_train_2, X_train_3])
+            X_test = np.array([X_test_1, X_test_2, X_test_3])
+            if (G == None) and (diag == None).all():
+                est.fit(X_train, y_train)
+            elif (G != None) and (diag == None).all():
+                est.fitG(X_train, y_train, G)
+            elif (G == None) and (diag != None).all():
+                diag_train = diag[train_index]
+                est.fitD(X_train, y_train, diag_train)
+            else:
+                raise ValueError("The indicated fitting strategy does not exist. Please attemp from L21, L21GMM, and L21DGMM.")
+            y_pred = est.predict(X_test)
+            mae_1 = mean_absolute_error(np.squeeze(y_test), y_pred[0])
+            mae_2 = mean_absolute_error(np.squeeze(y_test), y_pred[1])
+            mae_3 = mean_absolute_error(np.squeeze(y_test), y_pred[2])
+            score = np.mean(np.array([mae_1, mae_2, mae_3]))
+            scores.append(score)
+    elif scoring == 'neg_mean_squared_error':
+        for train_index, test_index in cv.split(X_1, y):
+            X_train_1, X_test_1 = X_1[train_index],X_1[test_index]
+            X_train_2, X_test_2 = X_2[train_index],X_2[test_index]
+            X_train_3, X_test_3 = X_3[train_index],X_3[test_index]
+            y_train, y_test = y[train_index],y[test_index]
+            X_train = np.array([X_train_1, X_train_2, X_train_3])
+            X_test = np.array([X_test_1, X_test_2, X_test_3])
+            if (G == None) and (diag == None).all():
+                est.fit(X_train, y_train)
+            elif (G != None) and (diag == None).all():
+                est.fitG(X_train, y_train, G)
+            elif (G == None) and (diag != None).all():
+                diag_train = diag[train_index]
+                est.fitD(X_train, y_train, diag_train)
+            else:
+                raise ValueError("The indicated fitting strategy does not exist. Please attemp from L21, L21GMM, and L21DGMM.")
+            y_pred = est.predict(X_test)
+            mse_1 = mean_squared_error(np.squeeze(y_test), y_pred[0])
+            mse_2 = mean_squared_error(np.squeeze(y_test), y_pred[1])
+            mse_3 = mean_squared_error(np.squeeze(y_test), y_pred[2])
+            score = np.mean(np.array([mse_1, mse_2, mse_3]))
+            scores.append(score)
+    elif scoring == 'neg_median_absolute_error':
+        for train_index, test_index in cv.split(X_1, y):
+            X_train_1, X_test_1 = X_1[train_index],X_1[test_index]
+            X_train_2, X_test_2 = X_2[train_index],X_2[test_index]
+            X_train_3, X_test_3 = X_3[train_index],X_3[test_index]
+            y_train, y_test = y[train_index],y[test_index]
+            X_train = np.array([X_train_1, X_train_2, X_train_3])
+            X_test = np.array([X_test_1, X_test_2, X_test_3])
+            if (G == None) and (diag == None).all():
+                est.fit(X_train, y_train)
+            elif (G != None) and (diag == None).all():
+                est.fitG(X_train, y_train, G)
+            elif (G == None) and (diag != None).all():
+                diag_train = diag[train_index]
+                est.fitD(X_train, y_train, diag_train)
+            else:
+                raise ValueError("The indicated fitting strategy does not exist. Please attemp from L21, L21GMM, and L21DGMM.")
+            y_pred = est.predict(X_test)
+            mdae_1 = median_absolute_error(np.squeeze(y_test), y_pred[0])
+            mdae_2 = median_absolute_error(np.squeeze(y_test), y_pred[1])
+            mdae_3 = median_absolute_error(np.squeeze(y_test), y_pred[2])
+            score = np.mean(np.array([mdae_1, mdae_2, mdae_3]))
+            scores.append(score)
+    return np.array(scores)
 def residualRecordReg(clf, model, x_train, y_train, x_test,y_test):
     y_train_pred = model.predict(x_train)
     y_pred = model.predict(x_test)
     residual_train = y_train - y_train_pred
     residual_test = y_test - y_pred
     return residual_train, residual_test, y_train_pred, y_pred
+
+def residualRecordL21Reg(clf, model, x_train, y_train, x_test,y_test):
+    y_train_pred = model.predict(x_train)
+    y_pred = model.predict(x_test)
+    residual_train_1 = y_train - y_train_pred[0]
+    residual_test_1 = y_test - y_pred[0]
+    residual_train_2 = y_train - y_train_pred[1]
+    residual_test_2 = y_test - y_pred[1]
+    residual_train_3 = y_train - y_train_pred[2]
+    residual_test_3 = y_test - y_pred[2]
+    return residual_train_1, residual_test_1, residual_train_2, residual_test_2, residual_train_3, residual_test_3,y_train_pred, y_pred
+    
+def modelEvaluationL21Reg(clf, model, x_test,y_test):
+    y_pred = model.predict(x_test)
+    
+    me_1 = max_error(np.squeeze(y_test), y_pred[0])
+    me_2 = max_error(np.squeeze(y_test), y_pred[1])
+    me_3 = max_error(np.squeeze(y_test), y_pred[2])
+    me = np.max(np.array([me_1, me_2, me_3]))
+    
+    mae_1 = mean_absolute_error(np.squeeze(y_test), y_pred[0])
+    mae_2 = mean_absolute_error(np.squeeze(y_test), y_pred[1])
+    mae_3 = mean_absolute_error(np.squeeze(y_test), y_pred[2])
+    mae = np.mean(np.array([mae_1, mae_2, mae_3]))
+    
+    mse_1 = mean_squared_error(np.squeeze(y_test), y_pred[0])
+    mse_2 = mean_squared_error(np.squeeze(y_test), y_pred[1])
+    mse_3 = mean_squared_error(np.squeeze(y_test), y_pred[2])
+    mse = np.mean(np.array([mse_1, mse_2, mse_3]))
+    
+    mdae_1 = median_absolute_error(np.squeeze(y_test), y_pred[0])
+    mdae_2 = median_absolute_error(np.squeeze(y_test), y_pred[1])
+    mdae_3 = median_absolute_error(np.squeeze(y_test), y_pred[2])
+    mdae = np.mean(np.array([mdae_1, mdae_2, mdae_3]))
+    
+    evs_1 = explained_variance_score(np.squeeze(y_test), y_pred[0])
+    evs_2 = explained_variance_score(np.squeeze(y_test), y_pred[1])
+    evs_3 = explained_variance_score(np.squeeze(y_test), y_pred[2])
+    evs = np.mean(np.array([evs_1, evs_2, evs_3]))
+    
+    corr1 = pearsonr(np.squeeze(y_test),y_pred[0])[0]
+    corr2 = pearsonr(np.squeeze(y_test),y_pred[1])[0]
+    corr3 = pearsonr(np.squeeze(y_test),y_pred[2])[0]
+    p_corr = np.mean(np.array([corr1, corr2, corr3]))
+    
+    print("Testing Max Error is: ", me)
+    print("Testing Mean Absolute Error is: ", mae)
+    print("Testing Mean Squared Error is: ", mse)
+    print("Testing Median Absolute Error is: ", mdae)
+    print("Testing Explained Variance Score is: ", evs)
+    print("Testing Pearson Correlation is: ", p_corr)
+    return [me_1, mae_1, mse_1, mdae_1, evs_1, corr1], [me_2, mae_2,mse_2, mdae_2, evs_2, corr2], [me_3, mae_3, mse_3, mdae_3, evs_3, corr3]
     
 def modelEvaluation_Regression(clf,model,x_test,y_test):
     """ Runs commands to gather all evaluations for later summaries and plots. """
@@ -596,6 +936,254 @@ def run_LiR_full(x_train, y_train, x_test, y_test,random_state,i,param_grid,n_tr
     results = permutation_importance(model, x_train, y_train, n_repeats=10,random_state=random_state)
     fi = results.importances_mean
     return [metricList, fi], [residual_train, residual_test, y_train_pred, y_pred, y_train, y_test]
+    
+
+
+#L21 Regression ####################################################################################################################################
+def objective_L21(trial, est, x_train, y_train, random_state, hype_cv, param_grid, scoring_metric):
+    params = {'lambda1' : trial.suggest_loguniform('lambda1',param_grid['lambda1'][0], param_grid['lambda1'][1]),
+			  #'lambda2' : trial.suggest_loguniform('lambda2',param_grid['lambda2'][0], param_grid['lambda2'][1]),
+			  'max_iter' : trial.suggest_loguniform('max_iter',param_grid['max_iter'][0], param_grid['max_iter'][1])}
+
+    return hyper_eval_2(est, x_train, y_train, random_state, hype_cv, params, scoring_metric)
+
+def run_L21_full(x_train, y_train, x_test, y_test, random_state, i,param_grid, n_trials,timeout,do_plot,full_path,use_uniform_FI,primary_metric, ROIs, datasets):
+    """ Run L21MM hyperparameter optimization, model training, evaluation, and model feature importance estimation. """
+    #Check whether hyperparameters are fixed (i.e. no hyperparameter sweep required) or whether a set/range of values were specified for any hyperparameter (conduct hyperparameter sweep)
+    isSingle = True
+    for key, value in param_grid.items():
+        if len(value) > 1:
+            isSingle = False
+    #Specify algorithm for hyperparameter optimization
+    est = l21regjob.L21Reg()
+    if not isSingle: #Run hyperparameter sweep
+        #Apply Optuna-----------------------------------------
+        sampler = optuna.samplers.TPESampler(seed=random_state)  # Make the sampler behave in a deterministic way.
+        study = optuna.create_study(direction='maximize', sampler=sampler)
+        optuna.logging.set_verbosity(optuna.logging.INFO)
+        study.optimize(lambda trial: objective_L21(trial, est, x_train, y_train, random_state, 3, param_grid, primary_metric),n_trials=n_trials, timeout=timeout, catch=(ValueError,))
+        #study.best_trial.user_attrs['params']
+        #Export hyperparameter optimization search visualization if specified by user
+        if eval(do_plot):
+            try:
+                fig = optuna.visualization.plot_parallel_coordinate(study)
+                fig.write_image(full_path+'/models/L21_ParamOptimization_'+str(i)+'.png')
+            except:
+                print('Warning: Optuna Optimization Visualization Generation Failed for L21 Due to Known Release Issue.  Please install Optuna 2.0.0 to avoid this issue.')
+        #Print results and hyperparamter values for best hyperparameter sweep trial
+        print('Best trial:')
+        best_trial = study.best_trial
+        print('  Value: ', best_trial.value)
+        print('  Params: ')
+        for key, value in best_trial.params.items():
+            print('    {}: {}'.format(key, value))
+        # Specify model with optimized hyperparameters
+        est = l21regjob.L21Reg()
+        clf = est.set_params(**best_trial.params)
+        if not os.path.exists(full_path + '/models'):
+            os.mkdir(full_path + '/models')
+        export_best_params(full_path + '/models/L21_bestparams' + str(i) + '.csv', best_trial.params) #Export final model hyperparamters to csv file
+    else: #Specify hyperparameter values (no sweep)
+        params = copy.deepcopy(param_grid)
+        for key, value in param_grid.items():
+            params[key] = value[0]
+        clf = est.set_params(**params)
+        if not os.path.exists(full_path + '/models'):
+            os.mkdir(full_path + '/models')
+        export_best_params(full_path + '/models/L21_usedparams' + str(i) + '.csv', params) #Export final model hyperparamters to csv file
+    #print(clf) #Print basic classifier info/hyperparmeters for verification
+    #Train final model using whole training dataset and 'best' hyperparameters
+    model = clf.fit(x_train, y_train)
+    # Save model with pickle so it can be applied in the future
+    if not os.path.exists(full_path+'/models/pickledModels'):
+        os.mkdir(full_path + '/models/pickledModels')
+    pickle.dump(model, open(full_path+'/models/pickledModels/L21_'+str(i)+'.pickle', 'wb'))
+    #Evaluate model
+    metricList_1,metricList_2, metricList_3 = modelEvaluationL21Reg(clf,model,x_test,y_test)
+    # Residual Record
+    residual_train_1, residual_test_1, residual_train_2, residual_test_2, residual_train_3, residual_test_3,y_train_pred, y_pred = residualRecordL21Reg(clf, model, x_train, y_train, x_test, y_test)
+    # Feature Importance Estimates
+    if eval(use_uniform_FI):
+        model.idxPred = 0
+        results = permutation_importance(model, x_train[0], y_train, n_repeats=10,random_state=random_state, scoring= 'explained_variance')
+        fi_1 = results.importances_mean
+        
+        model.idxPred = 1
+        results = permutation_importance(model, x_train[1], y_train, n_repeats=10,random_state=random_state, scoring= 'explained_variance')
+        fi_2 = results.importances_mean
+        
+        model.idxPred = 2
+        results = permutation_importance(model, x_train[2], y_train, n_repeats=10,random_state=random_state, scoring= 'explained_variance')
+        fi_3 = results.importances_mean
+    else:
+        fi_1 = pow(math.e,model.coef_[0])
+        fi_2 = pow(math.e,model.coef_[0])
+        fi_3 = pow(math.e,model.coef_[0])
+    heatMap(clf, model, i, 'L21Reg', ROIs, datasets, full_path)
+    return [metricList_1, fi_1], [metricList_2, fi_2], [metricList_3, fi_3], [residual_train_1, residual_test_1, y_train_pred[0], y_pred[0], y_train, y_test], [residual_train_2, residual_test_2, y_train_pred[1], y_pred[1], y_train, y_test], [residual_train_3, residual_test_3, y_train_pred[2], y_pred[2], y_train, y_test]
+    
+#L21GMM Regression #################################################################################################################################
+def objective_L21GMM(trial, est, x_train, y_train, G, random_state, hype_cv, param_grid, scoring_metric):
+    params = {'lambda1' : trial.suggest_loguniform('lambda1',param_grid['lambda1'][0], param_grid['lambda1'][1]),
+			  'lambda2' : trial.suggest_loguniform('lambda2',param_grid['lambda2'][0], param_grid['lambda2'][1]),
+			  'max_iter' : trial.suggest_loguniform('max_iter',param_grid['max_iter'][0], param_grid['max_iter'][1])}
+
+    return hyper_eval_2(est, x_train, y_train, random_state, hype_cv, params, scoring_metric, G = G)
+    
+def run_L21GMM_full(x_train, y_train, x_test, y_test, G, random_state, i,param_grid, n_trials,timeout,do_plot,full_path,use_uniform_FI,primary_metric, ROIs, datasets):
+    """ Run L21GMM hyperparameter optimization, model training, evaluation, and model feature importance estimation. """
+    #Check whether hyperparameters are fixed (i.e. no hyperparameter sweep required) or whether a set/range of values were specified for any hyperparameter (conduct hyperparameter sweep)
+    isSingle = True
+    for key, value in param_grid.items():
+        if len(value) > 1:
+            isSingle = False
+    #Specify algorithm for hyperparameter optimization
+    est = l21regjob.L21Reg()
+    if not isSingle: #Run hyperparameter sweep
+        #Apply Optuna-----------------------------------------
+        sampler = optuna.samplers.TPESampler(seed=random_state)  # Make the sampler behave in a deterministic way.
+        study = optuna.create_study(direction='maximize', sampler=sampler)
+        optuna.logging.set_verbosity(optuna.logging.INFO)
+        study.optimize(lambda trial: objective_L21GMM(trial, est, x_train, y_train, G, random_state, 3, param_grid, primary_metric),n_trials=n_trials, timeout=timeout, catch=(ValueError,))
+        #study.best_trial.user_attrs['params']
+        #Export hyperparameter optimization search visualization if specified by user
+        if eval(do_plot):
+            try:
+                fig = optuna.visualization.plot_parallel_coordinate(study)
+                fig.write_image(full_path+'/models/L21GMM_ParamOptimization_'+str(i)+'.png')
+            except:
+                print('Warning: Optuna Optimization Visualization Generation Failed for L21GMM Due to Known Release Issue.  Please install Optuna 2.0.0 to avoid this issue.')
+        #Print results and hyperparamter values for best hyperparameter sweep trial
+        print('Best trial:')
+        best_trial = study.best_trial
+        print('  Value: ', best_trial.value)
+        print('  Params: ')
+        for key, value in best_trial.params.items():
+            print('    {}: {}'.format(key, value))
+        # Specify model with optimized hyperparameters
+        est = l21regjob.L21Reg()
+        clf = est.set_params(**best_trial.params)
+        if not os.path.exists(full_path + '/models'):
+            os.mkdir(full_path + '/models')
+        export_best_params(full_path + '/models/L21GMM_bestparams' + str(i) + '.csv', best_trial.params) #Export final model hyperparamters to csv file
+    else: #Specify hyperparameter values (no sweep)
+        params = copy.deepcopy(param_grid)
+        for key, value in param_grid.items():
+            params[key] = value[0]
+        clf = est.set_params(**params)
+        if not os.path.exists(full_path + '/models'):
+            os.mkdir(full_path + '/models')
+        export_best_params(full_path + '/models/L21GMM_usedparams' + str(i) + '.csv', params) #Export final model hyperparamters to csv file
+    #print(clf) #Print basic classifier info/hyperparmeters for verification
+    #Train final model using whole training dataset and 'best' hyperparameters
+    model = clf.fitG(x_train, y_train, G)
+    # Save model with pickle so it can be applied in the future
+    if not os.path.exists(full_path+'/models/pickledModels'):
+        os.mkdir(full_path + '/models/pickledModels')
+    pickle.dump(model, open(full_path+'/models/pickledModels/L21GMM_'+str(i)+'.pickle', 'wb'))
+    #Evaluate model
+    metricList_1,metricList_2, metricList_3 = modelEvaluationL21Reg(clf,model,x_test,y_test)
+    # Feature Importance Estimates
+    if eval(use_uniform_FI):
+        model.idxPred = 0
+        results = permutation_importance(model, x_train[0], y_train, n_repeats=10,random_state=random_state, scoring= 'explained_variance')
+        fi_1 = results.importances_mean
+        
+        model.idxPred = 1
+        results = permutation_importance(model, x_train[1], y_train, n_repeats=10,random_state=random_state, scoring= 'explained_variance')
+        fi_2 = results.importances_mean
+        
+        model.idxPred = 2
+        results = permutation_importance(model, x_train[2], y_train, n_repeats=10,random_state=random_state, scoring= 'explained_variance')
+        fi_3 = results.importances_mean
+    else:
+        fi_1 = pow(math.e,model.coef_[0])
+        fi_2 = pow(math.e,model.coef_[0])
+        fi_3 = pow(math.e,model.coef_[0])
+    heatMap(clf, model, i, 'L21GMMReg', ROIs, datasets, full_path)
+    return [metricList_1, fi_1], [metricList_2, fi_2], [metricList_3, fi_3]
+    
+#L21DGMM Regression ################################################################################################################################
+def objective_L21DGMM(trial, est, x_train, y_train, diag, random_state, hype_cv, param_grid, scoring_metric):
+    params = {'lambda1' : trial.suggest_loguniform('lambda1',param_grid['lambda1'][0], param_grid['lambda1'][1]),
+			  'lambda2' : trial.suggest_loguniform('lambda2',param_grid['lambda2'][0], param_grid['lambda2'][1]),
+			  'max_iter' : trial.suggest_loguniform('max_iter',param_grid['max_iter'][0], param_grid['max_iter'][1])}
+	
+    return hyper_eval_2(est, x_train, y_train, random_state, hype_cv, params, scoring_metric, diag = diag)
+
+def run_L21DGMM_full(x_train, y_train, x_test, y_test, diag, random_state, i,param_grid, n_trials,timeout,do_plot,full_path,use_uniform_FI,primary_metric, ROIs, datasets):
+    """ Run L21DGMM hyperparameter optimization, model training, evaluation, and model feature importance estimation. """
+    #Check whether hyperparameters are fixed (i.e. no hyperparameter sweep required) or whether a set/range of values were specified for any hyperparameter (conduct hyperparameter sweep)
+    isSingle = True
+    for key, value in param_grid.items():
+        if len(value) > 1:
+            isSingle = False
+    #Specify algorithm for hyperparameter optimization
+    est = l21regjob.L21Reg()
+    if not isSingle: #Run hyperparameter sweep
+        #Apply Optuna-----------------------------------------
+        sampler = optuna.samplers.TPESampler(seed=random_state)  # Make the sampler behave in a deterministic way.
+        study = optuna.create_study(direction='maximize', sampler=sampler)
+        optuna.logging.set_verbosity(optuna.logging.INFO)
+        study.optimize(lambda trial: objective_L21DGMM(trial, est, x_train, y_train, diag, random_state, 3, param_grid, primary_metric),n_trials=n_trials, timeout=timeout, catch=(ValueError,))
+        #study.best_trial.user_attrs['params']
+        #Export hyperparameter optimization search visualization if specified by user
+        if eval(do_plot):
+            try:
+                fig = optuna.visualization.plot_parallel_coordinate(study)
+                fig.write_image(full_path+'/models/L21DGMM_ParamOptimization_'+str(i)+'.png')
+            except:
+                print('Warning: Optuna Optimization Visualization Generation Failed for L21DGMM Due to Known Release Issue.  Please install Optuna 2.0.0 to avoid this issue.')
+        #Print results and hyperparamter values for best hyperparameter sweep trial
+        print('Best trial:')
+        best_trial = study.best_trial
+        print('  Value: ', best_trial.value)
+        print('  Params: ')
+        for key, value in best_trial.params.items():
+            print('    {}: {}'.format(key, value))
+        # Specify model with optimized hyperparameters
+        est = l21regjob.L21Reg()
+        clf = est.set_params(**best_trial.params)
+        if not os.path.exists(full_path + '/models'):
+            os.mkdir(full_path + '/models')
+        export_best_params(full_path + '/models/L21DGMM_bestparams' + str(i) + '.csv', best_trial.params) #Export final model hyperparamters to csv file
+    else: #Specify hyperparameter values (no sweep)
+        params = copy.deepcopy(param_grid)
+        for key, value in param_grid.items():
+            params[key] = value[0]
+        clf = est.set_params(**params)
+        if not os.path.exists(full_path + '/models'):
+            os.mkdir(full_path + '/models')
+        export_best_params(full_path + '/models/L21DGMM_usedparams' + str(i) + '.csv', params) #Export final model hyperparamters to csv file
+    #print(clf) #Print basic classifier info/hyperparmeters for verification
+    #Train final model using whole training dataset and 'best' hyperparameters
+    model = clf.fitD(x_train, y_train, diag)
+    # Save model with pickle so it can be applied in the future
+    if not os.path.exists(full_path+'/models/pickledModels'):
+        os.mkdir(full_path + '/models/pickledModels')
+    pickle.dump(model, open(full_path+'/models/pickledModels/L21DGMM_'+str(i)+'.pickle', 'wb'))
+    #Evaluate model
+    metricList_1,metricList_2, metricList_3 = modelEvaluationL21Reg(clf,model,x_test,y_test)
+    # Feature Importance Estimates
+    if eval(use_uniform_FI):
+        model.idxPred = 0
+        results = permutation_importance(model, x_train[0], y_train, n_repeats=10,random_state=random_state, scoring= 'explained_variance')
+        fi_1 = results.importances_mean
+        
+        model.idxPred = 1
+        results = permutation_importance(model, x_train[1], y_train, n_repeats=10,random_state=random_state, scoring= 'explained_variance')
+        fi_2 = results.importances_mean
+        
+        model.idxPred = 2
+        results = permutation_importance(model, x_train[2], y_train, n_repeats=10,random_state=random_state, scoring= 'explained_variance')
+        fi_3 = results.importances_mean
+    else:
+        fi_1 = pow(math.e,model.coef_[0])
+        fi_2 = pow(math.e,model.coef_[0])
+        fi_3 = pow(math.e,model.coef_[0])
+    heatMap(clf, model, i, 'L21DGMMReg', ROIs, datasets, full_path)
+    return [metricList_1, fi_1], [metricList_2, fi_2], [metricList_3, fi_3]
+
 
 def export_best_params(file_name,param_grid):
     """ Exports best hyperparameter scores to output file."""
@@ -604,6 +1192,7 @@ def export_best_params(file_name,param_grid):
         best_params_copy[best] = [best_params_copy[best]]
     df = pd.DataFrame.from_dict(best_params_copy)
     df.to_csv(file_name, index=False)
+
 
 def regressionEval(y_true, y_pred):
     """ Calculates standard regression metrics including:
@@ -629,10 +1218,18 @@ def regressionEval(y_true, y_pred):
 def hyperparameters(random_state,feature_names):
     param_grid = {}
 
+    # DGMM Regressor
+    # https://github.com/shaoweinuaa/DGMM
+    param_grid_L21Reg = {'lambda1':[1,100], 'max_iter': [10, 2500]}
+
+    param_grid_L21GMMReg = {'lambda1':[1, 300], 'lambda2':[1, 300], 'max_iter': [10, 2500]}
+
+    param_grid_L21DGMMReg = {'lambda1': [0.01, 100], 'lambda2': [0.01, 100], 'max_iter': [10, 2500]}
+
     # Elastic Net Regressor
     # https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html#sklearn.linear_model.ElasticNet
-    param_grid_EN = {'alpha':[1e-3,1],'l1_ratio':[0,1], 
-                     'max_iter': [10,2500],'random_state':[random_state]}
+    param_grid_EN = {'alpha':[1e-3,1],'max_iter': [10,2500],                      
+                     'l1_ratio':[0,1],'random_state':[random_state]}
     
     # Random Forest Regressor
     # https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html
@@ -664,6 +1261,9 @@ def hyperparameters(random_state,feature_names):
                      'random_state':[random_state]}
         
     #Leave code below as is...
+    param_grid['L21Reg'] = param_grid_L21Reg
+    param_grid['L21GMMReg'] = param_grid_L21GMMReg
+    param_grid['L21DGMMReg'] = param_grid_L21DGMMReg
     param_grid['Linear Regression'] = {}
     param_grid['Elastic Net'] = param_grid_EN
     param_grid['Group Lasso'] = param_grid_GL

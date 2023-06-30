@@ -82,13 +82,9 @@ def job(experiment_path,training,rep_data_path,data_path):
     print("Starting Report")
     print(ars_dic)
     ls1 = ars_dic[0:87] # DataPath to OverwriteCVDatasets - filter poor [0:87]
-    print(ls1)
-    ls2 = ars_dic[87:108]   # ML modeling algorithms
-    print(ls2)
-    ls3 = ars_dic[108:111]  # primary metric - ExportHyperparemterSweepPLot  [132:150]
-    print(ls3)
-    ls4 = ars_dic[111:]  # ExportROCPlot to Top Model Features to Display [165:180]
-    print(ls4)
+    ls2 = ars_dic[87:117]   # ML modeling algorithms
+    ls3 = ars_dic[117:120]  # primary metric - ExportHyperparemterSweepPLot  [132:150]
+    ls4 = ars_dic[120:]  # ExportROCPlot to Top Model Features to Display [165:180]
 
     analy_report.set_font('Times', 'B', 12)
     analy_report.cell(w=180, h=8, txt='STREAMLINE Training Summary Report: '+time, ln=2, border=1, align='L')
@@ -200,7 +196,7 @@ def job(experiment_path,training,rep_data_path,data_path):
                 algorithms.append(key)
 
         if eval(training):
-            analy_report.image(experiment_path+'/'+ds[n]+'/model_evaluation/evalPlots/'+'residual_distrib_all_algorithms.png', 1, 120, 200, 180)
+            analy_report.image(experiment_path+'/'+ds[n]+'/model_evaluation/residualPlot/'+'residual_distrib_all_algorithms.png', 30, 120, 150, 160)
             # analy_report.image(experiment_path+'/'+ds[n]+'/model_evaluation/residualPlot/'+'actual_vs_predict_all_algorithms.png', 100, 120, 110, 60)
             
         if eval(training):
@@ -299,9 +295,9 @@ def job(experiment_path,training,rep_data_path,data_path):
         analy_report.cell(w=0, h = 8, txt="Dataset and Model Prediction Summary:  D"+str(n+1)+" = "+ds[n], border=1, align="L", ln=2)
         
         if eval(training):
-            analy_report.image(experiment_path+'/'+ds[n]+'/model_evaluation/evalPlots/'+'actual_vs_predict_all_algorithms.png', 1, 10, 200, 120)
-            analy_report.image(experiment_path+'/'+ds[n]+'/model_evaluation/evalPlots/'+'probability_train_residual_all_algorithms.png', 1, 130, 100, 90)
-            analy_report.image(experiment_path+'/'+ds[n]+'/model_evaluation/evalPlots/'+'probability_test_residual_all_algorithms.png', 110, 130, 100, 90)
+            analy_report.image(experiment_path+'/'+ds[n]+'/model_evaluation/residualPlot/'+'actual_vs_predict_all_algorithms.png', 30, 10, 150, 100)
+            analy_report.image(experiment_path+'/'+ds[n]+'/model_evaluation/residualPlot/'+'probability_train_residual_all_algorithms.png', 1, 120, 100, 90)
+            analy_report.image(experiment_path+'/'+ds[n]+'/model_evaluation/residualPlot/'+'probability_test_residual_all_algorithms.png', 110, 120, 100, 90)
             # analy_report.image(experiment_path+'/'+ds[n]+'/model_evaluation/residualPlot/'+'actual_vs_predict_all_algorithms.png', 1, 1, 110, 60)
 
     # NEXT PAGE(S) - Average Model Prediction Statistics--------------------------------------------------------------------------------------

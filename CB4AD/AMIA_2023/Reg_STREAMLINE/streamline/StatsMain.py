@@ -30,7 +30,7 @@ def main(argv):
     #Parse arguments
     parser = argparse.ArgumentParser(description='')
     #No defaults
-    parser.add_argument('--out-path', dest='output_path', type=str, help='path to output directory', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression/Colab_Output')
+    parser.add_argument('--out-path', dest='output_path', type=str, help='path to output directory', default = '/Users/yanbo/Dropbox/STREAMLINE-Regression_AMIA/Colab_Output')
     parser.add_argument('--exp-name', dest='experiment_name', type=str, help='name of experiment (no spaces)', default = 'Demo_Experiment')
     #Defaults available
     parser.add_argument('--plot-box', dest='plot_metric_boxplots', type=str,help='Plot box plot summaries comparing algorithms for each metric', default='True')
@@ -69,7 +69,7 @@ def main(argv):
     if not options.do_check: #Run job submission
         # Iterate through datasets
         dataset_paths = os.listdir(options.output_path + "/" + options.experiment_name)
-        removeList = ['metadata.pickle','metadata.csv','algInfo.pickle','jobsCompleted','logs','jobs','DatasetComparisons',options.experiment_name+'_ML_Pipeline_Report.pdf']
+        removeList = ['L21', 'metadata.pickle','metadata.csv','algInfo.pickle','jobsCompleted','logs','jobs','DatasetComparisons',options.experiment_name+'_ML_Pipeline_Report.pdf']
         for text in removeList:
             if text in dataset_paths:
                 dataset_paths.remove(text)
