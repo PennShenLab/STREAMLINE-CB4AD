@@ -18,7 +18,7 @@ STREAMLINE as an AutoML pipeline for evaluating AD regression models, and for di
 imaging biomarkers.
 
 ## Method
-<img src="Reg_STREAMLINE.png" width="600" height="400">
+<img src="Reg_STREAMLINE.png" width="600" height="300">
 
 This figure demonstrates the workflow of our Regression STREAMLINE pipeline. The pipeline is modified based on the original STREAMLINE: [https://github.com/UrbsLab/STREAMLINE](https://github.com/UrbsLab/STREAMLINE). We replaced the binary classification ML algorithms by the regression ML algorithms by adding new regression models, modifying pipeline structure, and using new evaluation metrics, such as MSE and explained variance, and visualizations, such as actual vs. prediction plots, residual distribution plots, and probability plots. Some example visualizations are shown below:
 
@@ -30,7 +30,7 @@ This figure demonstrates the workflow of our Regression STREAMLINE pipeline. The
 
 Besides these new visualizations, we also modified the existing visualizations in original STREAMLINE to fit our new regression evaluation and interpretability tasks. The example of feature importance of data is shown below:
 
-
+<img src="Compare_FI_Norm.png" width="700" height="400">
 
 ## Data
 Data used in this work are obtained from the Alzheimer’s Disease Neuroimaging Initiative (ADNI) database ([adni.loni.usc.edu](adni.loni.usc.edu)). ADNI was launched in 2003 as a public-private partnership, led by Principal Investigator Michael W. Weiner, MD. The primary goal of ADNI has been to test whether serial magnetic resonance imaging (MRI), positron emission tomography (PET), other biological markers, and clinical and neuropsychological assessment can be combined to measure the progression of mild cognitive impairment (MCI) and early AD. For up-to-date information, see [www.adni-info.org](www.adni-info.org).
