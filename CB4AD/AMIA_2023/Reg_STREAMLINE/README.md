@@ -28,6 +28,10 @@ This figure demonstrates the workflow of our Regression STREAMLINE pipeline. The
 
 <img src="probability_train_residual_all_algorithms.png" width="400" height="400"> <img src="probability_test_residual_all_algorithms.png" width="400" height="400">
 
+Besides these new visualizations, we also modified the existing visualizations in original STREAMLINE to fit our new regression evaluation and interpretability tasks. The example of feature importance of data is shown below:
+
+
+
 ## Data
 Data used in this work are obtained from the Alzheimer’s Disease Neuroimaging Initiative (ADNI) database ([adni.loni.usc.edu](adni.loni.usc.edu)). ADNI was launched in 2003 as a public-private partnership, led by Principal Investigator Michael W. Weiner, MD. The primary goal of ADNI has been to test whether serial magnetic resonance imaging (MRI), positron emission tomography (PET), other biological markers, and clinical and neuropsychological assessment can be combined to measure the progression of mild cognitive impairment (MCI) and early AD. For up-to-date information, see [www.adni-info.org](www.adni-info.org).
 
