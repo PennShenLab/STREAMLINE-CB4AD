@@ -24,6 +24,6 @@ This figure demonstrates the workflow of our Regression STREAMLINE pipeline. The
 
 <img src="residual_distrib_all_algorithms.png" width="600" height="400">
 
-<img src="actual_vs_predict_all_algorithms.png" width="600" height="400">
+<img src="actual_vs_predict_all_algorithms.png" width="600" height="300">
 
 <img src="residual_distrib_all_algorithms.png" width="600" height="400">
