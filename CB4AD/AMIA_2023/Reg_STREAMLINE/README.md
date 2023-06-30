@@ -2,7 +2,7 @@
 This Reg_STREAMLINE directory in the STREAMLINE-CB4AD repository holds the official code for the 
 conference paper [Exploring Automated Machine Learning for Cognitive Outcome Prediction
 from Multimodal Brain Imaging using STREAMLINE](https://pubmed.ncbi.nlm.nih.gov/37350896/) 
-(Accepted by AMIA 2023)
+(Accepted by [AMIA 2023]((https://amia.org/education-events/amia-2023-informatics-summit)))
 
 ## Abstract
 STREAMLINE is a simple, transparent, end-to-end automated machine learning (AutoML) pipeline for 
@@ -18,4 +18,4 @@ STREAMLINE as an AutoML pipeline for evaluating AD regression models, and for di
 imaging biomarkers.
 
 ## Method
-![alt text]([https://github.com/PennShenLab/STREAMLINE-CB4AD/blob/main/CB4AD/AMIA_2023/Reg_STREAMLINE/Pictures/Reg_STREAMLINE.png]
+<img src="Metric_compare.png" width="800" height="300">
