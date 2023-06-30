@@ -18,8 +18,8 @@ STREAMLINE as an AutoML pipeline for evaluating AD regression models, and for di
 imaging biomarkers.
 
 ## Method
-<img src="Reg_STREAMLINE.png" width="800" height="400">
+<img src="Reg_STREAMLINE.png" width="600" height="400">
 
 This figure demonstrates the workflow of our Regression STREAMLINE pipeline. The pipeline is modified based on the original STREAMLINE: [https://github.com/UrbsLab/STREAMLINE](https://github.com/UrbsLab/STREAMLINE). We replaced the binary classification ML algorithms by the regression ML algorithms by adding new regression models, modifying pipeline structure, and using new evaluation metrics, such as MSE and explained variance, and visualizations, such as actual vs. prediction plots, residual distribution plots, and probability plots. Some example visualizations are shown below:
 
-<img src="Reg_STREAMLINE.png" width="800" height="400">
+<img src="residual_distrib_all_algorithms.png" width="600" height="400">
